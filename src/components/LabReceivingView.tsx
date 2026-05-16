@@ -80,7 +80,7 @@ export default function LabReceivingView({ onNavigate }: LabReceivingViewProps) 
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-[10px] font-bold text-text-slate-400 uppercase tracking-widest border-b border-border-slate">
               <tr>
-                <th className="px-6 py-4">Child ID</th>
+                <th className="px-6 py-4">Sub-Sample ID</th>
                 <th className="px-6 py-4">Parent ID</th>
                 <th className="px-6 py-4 text-right">Weight</th>
                 <th className="px-6 py-4">Status</th>
@@ -89,10 +89,10 @@ export default function LabReceivingView({ onNavigate }: LabReceivingViewProps) 
             </thead>
             <tbody className="divide-y divide-slate-100">
                {[
-                 { id: 'CS-M-4412', parent: 'PR-8820', weight: '1.2 kg', status: 'In Transit', type: 'pending' },
-                 { id: 'CS-C-4413', parent: 'PR-8820', weight: '0.8 kg', status: 'In Transit', type: 'pending' },
-                 { id: 'CS-M-4409', parent: 'PR-8819', weight: '1.0 kg', status: 'Flagged', type: 'alert' },
-                 { id: 'CS-C-4410', parent: 'PR-8819', weight: '0.8 kg', status: 'Received', type: 'done' },
+                 { id: 'SUB-M-8820-A', parent: 'PRNT-8820-A', weight: '1.2 kg', status: 'In Transit', type: 'pending' },
+                 { id: 'SUB-C-8820-A', parent: 'PRNT-8820-A', weight: '0.8 kg', status: 'In Transit', type: 'pending' },
+                 { id: 'SUB-M-8819-X', parent: 'PRNT-8819-X', weight: '1.0 kg', status: 'Flagged',    type: 'alert' },
+                 { id: 'SUB-C-8819-X', parent: 'PRNT-8819-X', weight: '0.8 kg', status: 'Received',   type: 'done' },
                ].map((item, i) => (
                  <tr key={i} className={`hover:bg-slate-50 transition-colors ${item.type === 'alert' ? 'bg-amber-50/50' : ''}`}>
                     <td className="px-6 py-4 data-mono text-sm font-bold text-text-slate-900">{item.id}</td>
