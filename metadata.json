@@ -1,0 +1,6 @@
+{
+  "name": "CSAAS - Industrial Monitor",
+  "description": "Fuel Management System for Coal Sample Anti-Adulteration monitoring, featuring real-time tracking, lab receiving, and exception logging.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

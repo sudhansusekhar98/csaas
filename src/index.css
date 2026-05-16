@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-primary-indigo: #4f46e5;
+  --color-primary-indigo-dark: #4338ca;
+  --color-success-emerald: #10b981;
+  --color-warning-amber: #f59e0b;
+  --color-surface: #f8fafc;
+  --color-border-slate: #e2e8f0;
+  --color-text-slate-900: #0f172a;
+  --color-text-slate-600: #475569;
+  --color-text-slate-400: #94a3b8;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-text-slate-900 font-sans antialiased;
+  }
+}
+
+.label-caps {
+  @apply font-sans text-[10px] font-bold leading-4 tracking-widest uppercase text-text-slate-400;
+}
+
+.data-mono {
+  @apply font-mono text-[13px] font-medium leading-4;
+}
