@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "mcp__ide__getDiagnostics",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(powershell -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
+      "Bash(ls -la --ignore=node_modules)",
+      "Bash(powershell -Command \"Get-ChildItem -Exclude node_modules | Select-Object Name, LastWriteTime\")",
+      "Bash(find src *)",
+      "Bash(powershell -Command \"Get-ChildItem -Path src -Recurse | Select-Object FullName\")",
+      "Bash(powershell -File \".specify/scripts/powershell/setup-tasks.ps1\" -Json)",
+      "Bash(powershell -File \".specify/scripts/powershell/check-prerequisites.ps1\" -Json -RequireTasks -IncludeTasks)",
+      "Bash(del \"D:\\\\VL Access\\\\Coal Project\\\\Prototype\\\\src\\\\components\\\\ExceptionLoggingView.tsx\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(npx vite *)"
     ]
   }
 }

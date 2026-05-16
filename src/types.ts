@@ -7,16 +7,15 @@ export type ViewType =
   | 'dashboard'
   | 'consignments'
   | 'tracking'
-  | 'audit'
-  | 'settings'
+  | 'prep-room'
+  | 'division-station'
   | 'lab-receiving'
-  | 'exception-logging'
-  | 'system-health'
+  | 'non-conformance'
+  | 'audit'
+  | 'report-builder'
   | 'personnel'
-  | 'splitting-station'
-  | 'report-builder';
-
-export type ExtendedViewType = ViewType | 'alert-config';
+  | 'system-health'
+  | 'alert-config';
 
 export interface ViewDef {
   id: ViewType;

@@ -1,12 +1,19 @@
 import { Search, ChevronRight } from 'lucide-react';
+import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
+import type { ViewType } from '../types';
 
-export default function LabReceivingView() {
+interface LabReceivingViewProps {
+  onNavigate: (view: ViewType) => void;
+}
+
+export default function LabReceivingView({ onNavigate }: LabReceivingViewProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <ProcessBreadcrumb currentStep={5} onNavigate={onNavigate} />
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-text-slate-900 tracking-tight">Lab Sample Receiving</h2>
-          <p className="text-text-slate-500 mt-1 text-sm">Verify and log incoming child samples from the Prep Room.</p>
+          <h2 className="text-3xl font-bold text-text-slate-900 tracking-tight">Lab Receiving & Authentication</h2>
+          <p className="text-text-slate-500 mt-1 text-sm">Verify and log incoming sub-samples from the Division Station.</p>
         </div>
         <div className="flex gap-2">
           <button className="px-5 py-2 bg-primary-indigo text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-100 hover:brightness-110 transition-all">Receive Batch</button>

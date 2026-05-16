@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import { Plus, X, TrainFront, Box, ShieldCheck, Activity, Search, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
+import type { ViewType } from '../types';
 
-export default function ConsignmentsView() {
+interface ConsignmentsViewProps {
+  onNavigate: (view: ViewType) => void;
+}
+
+export default function ConsignmentsView({ onNavigate }: ConsignmentsViewProps) {
   const [showNewConsignment, setShowNewConsignment] = useState(false);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <ProcessBreadcrumb currentStep={1} onNavigate={onNavigate} />
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-4xl font-bold text-text-slate-900 tracking-tight">Bulk Consignments</h1>
-          <p className="text-text-slate-500 mt-1 font-medium">Monitoring inbound train racks and wagon manifests.</p>
+          <p className="text-text-slate-500 mt-1 font-medium">Register and monitor inbound coal consignments.</p>
         </div>
         <div className="flex gap-3">
            <button

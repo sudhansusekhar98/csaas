@@ -1,20 +1,44 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# CSAAS — Coal Sample Anti-Adulteration System
 
-# Run and deploy your AI Studio app
+A React + TypeScript prototype for managing the end-to-end chain of custody of coal samples from consignment receipt through laboratory analysis.
 
-This contains everything you need to run your app locally.
+## Process Flow
 
-View your app in AI Studio: https://ai.studio/apps/8512621c-057c-4d73-94ea-f405f805f238
+```
+Consignment Receipt → Sample Collection & Sealing → In Transit (VMS) →
+Sample Preparation (Pulverisation) → Division Station (Splitting) → Lab Receiving & Authentication
+```
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites**: Node.js 18+
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```
+   npm install
+   ```
+
+2. Start the development server:
+   ```
+   npm run dev
+   ```
+
+3. Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+> No API key or backend required — this is a UI prototype with mock data.
+
+## Navigation Structure
+
+| Group | Screens |
+|-------|---------|
+| **Operations** | Consignments → Sample Tracking → Division Station → Lab Receiving |
+| **Quality & Compliance** | Non-Conformance Reports, Audit History, Reports |
+| **Administration** | Personnel, System Health, Alerts |
+
+## Key Features
+
+- **Live Pipeline Dashboard** — shift-level sample counts at each process stage
+- **Process Breadcrumb** — contextual wayfinding on all operational screens
+- **Division Station Session List** — manage multiple splitting sessions
+- **Inline NCR Trigger** — flag non-conformances without leaving the current screen
+- **Chain of Custody Tracking** — 12-step lifecycle stepper with biometric verification mockup
