@@ -16,7 +16,15 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
       "Bash(npx vite *)",
       "Skill(speckit-git-feature)",
-      "Bash(powershell -File \".specify/scripts/powershell/update-agent-context.ps1\")"
+      "Bash(powershell -File \".specify/scripts/powershell/update-agent-context.ps1\")",
+      "Bash(pwsh -NoProfile -File .specify/scripts/powershell/setup-plan.ps1 -Json)",
+      "PowerShell(.\\\\.specify\\\\scripts\\\\powershell\\\\setup-plan.ps1 -Json)",
+      "Bash(git checkout *)",
+      "PowerShell(.\\\\.specify\\\\scripts\\\\powershell\\\\setup-tasks.ps1 -Json)",
+      "PowerShell(.\\\\.specify\\\\scripts\\\\powershell\\\\check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
+      "PowerShell(npm install *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(npm run *)"
     ]
   }
 }
