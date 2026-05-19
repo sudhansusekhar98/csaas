@@ -20,6 +20,8 @@ const PENDING_BAGS = [
 
 type ScanPhase = 'idle' | 'scanning' | 'verified' | 'failed';
 
+const PREP_RECEIVERS = ['M. Patel (OPR-881)', 'K. Sharma (OPR-555)', 'L. Das (OPR-623)'];
+
 export default function PrepRoomView({ onNavigate }: PrepRoomViewProps) {
   const [manualId, setManualId] = useState('');
   const [scanPhase, setScanPhase] = useState<ScanPhase>('idle');
@@ -27,6 +29,7 @@ export default function PrepRoomView({ onNavigate }: PrepRoomViewProps) {
   const [scannedBag, setScannedBag] = useState<typeof PENDING_BAGS[0] | null>(null);
   const [receivedIds, setReceivedIds] = useState<Set<string>>(new Set());
   const [showBiometric, setShowBiometric] = useState(false);
+  const [prepRecord, setPrepRecord] = useState({ receivingPerson: '', sealCondition: '', videoRef: '' });
 
   const triggerScan = (bagId?: string) => {
     const targetId = bagId ?? manualId.trim();
@@ -49,7 +52,10 @@ export default function PrepRoomView({ onNavigate }: PrepRoomViewProps) {
     }, 150);
   };
 
+  const canAccept = showBiometric && prepRecord.receivingPerson && prepRecord.sealCondition && prepRecord.videoRef;
+
   const acceptBag = () => {
+    if (!canAccept) return;
     if (scannedBag) {
       setReceivedIds((prev) => new Set([...prev, scannedBag.id]));
     }
@@ -58,6 +64,7 @@ export default function PrepRoomView({ onNavigate }: PrepRoomViewProps) {
     setScanProgress(0);
     setScannedBag(null);
     setManualId('');
+    setPrepRecord({ receivingPerson: '', sealCondition: '', videoRef: '' });
   };
 
   const resetScan = () => {
@@ -347,9 +354,53 @@ export default function PrepRoomView({ onNavigate }: PrepRoomViewProps) {
                     </div>
                   )}
 
+                  {/* Prep Room Record — required before Accept */}
+                  <div className="w-full border border-border-slate rounded-2xl p-4 space-y-3 text-left bg-slate-50/50">
+                    <p className="label-caps text-[10px] text-primary-indigo">Prep Room Record <span className="text-red-500">*</span></p>
+                    <div className="space-y-1.5">
+                      <label className="label-caps">Receiving Person</label>
+                      <select
+                        value={prepRecord.receivingPerson}
+                        onChange={(e) => setPrepRecord((p) => ({ ...p, receivingPerson: e.target.value }))}
+                        className="w-full bg-white border border-border-slate rounded-xl p-2.5 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none"
+                      >
+                        <option value="">Select receiver...</option>
+                        {PREP_RECEIVERS.map((r) => <option key={r}>{r}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="label-caps">Seal Condition</label>
+                      <div className="flex gap-3">
+                        {(['intact', 'damaged', 'missing'] as const).map((cond) => (
+                          <button
+                            key={cond}
+                            onClick={() => setPrepRecord((p) => ({ ...p, sealCondition: cond }))}
+                            className={`flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all capitalize ${
+                              prepRecord.sealCondition === cond
+                                ? cond === 'intact' ? 'bg-success-emerald text-white border-success-emerald'
+                                  : 'bg-red-500 text-white border-red-500'
+                                : 'bg-white text-text-slate-500 border-border-slate hover:border-primary-indigo'
+                            }`}
+                          >
+                            {cond}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="label-caps">Video Reference (CCTV Clip ID)</label>
+                      <input
+                        value={prepRecord.videoRef}
+                        onChange={(e) => setPrepRecord((p) => ({ ...p, videoRef: e.target.value }))}
+                        placeholder="e.g. CAM-04-1435-001"
+                        className="w-full bg-white border border-border-slate rounded-xl p-2.5 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none placeholder:text-slate-300"
+                      />
+                    </div>
+                  </div>
+
                   <button
                     onClick={acceptBag}
-                    disabled={!showBiometric}
+                    disabled={!canAccept}
                     className="w-full py-3 bg-success-emerald text-white font-bold text-sm rounded-xl shadow-lg hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Accept & Log to Queue

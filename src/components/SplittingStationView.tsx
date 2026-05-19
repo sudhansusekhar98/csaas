@@ -11,6 +11,14 @@ import type { ViewType } from '../types';
 
 type SubSampleType = 'M' | 'C' | 'R';
 type SessionStatus = 'AWAITING_SPLIT' | 'IN_PROGRESS' | 'COMPLETED';
+type BagType = 'A' | 'B' | 'R';
+
+interface PulvRecord { marked: boolean; openedAt: string; operator: string; cctvClipId: string }
+interface BagRecord { weight: string; sealed: boolean; sealId: string }
+
+function bagSealId(parentId: string, type: BagType): string {
+  return `BAG-${type}-${parentId.replace('PRNT-', '')}`;
+}
 
 interface Session {
   id: string;                          // DIV-8822-X
@@ -91,6 +99,35 @@ export default function SplittingStationView({ onNavigate }: SplittingStationVie
   const [sealScanPhase, setSealScanPhase] = useState<'idle' | 'scanning' | 'verified'>('idle');
   const [sealScanProgress, setSealScanProgress] = useState(0);
 
+  // Pulverisation records per session
+  const [pulvData, setPulvData] = useState<Record<string, PulvRecord>>({
+    'DIV-8822-X': { marked: false, openedAt: '', operator: '', cctvClipId: '' },
+    'DIV-8820-A': { marked: false, openedAt: '', operator: '', cctvClipId: '' },
+    'DIV-8818-B': { marked: true,  openedAt: '11:45 UTC', operator: 'OPR-774 (J. Doe)', cctvClipId: 'CAM-04-1145-001' },
+  });
+
+  // Small bagging records per session
+  const [baggingData, setBaggingData] = useState<Record<string, Record<BagType, BagRecord>>>({
+    'DIV-8822-X': {
+      A: { weight: '', sealed: false, sealId: '' },
+      B: { weight: '', sealed: false, sealId: '' },
+      R: { weight: '', sealed: false, sealId: '' },
+    },
+    'DIV-8820-A': {
+      A: { weight: '', sealed: false, sealId: '' },
+      B: { weight: '', sealed: false, sealId: '' },
+      R: { weight: '', sealed: false, sealId: '' },
+    },
+    'DIV-8818-B': {
+      A: { weight: '2.10', sealed: true, sealId: 'BAG-A-8818-B' },
+      B: { weight: '5.20', sealed: true, sealId: 'BAG-B-8818-B' },
+      R: { weight: '7.90', sealed: true, sealId: 'BAG-R-8818-B' },
+    },
+  });
+
+  const [pulvOperator, setPulvOperator] = useState('');
+  const [pulvCctv, setPulvCctv] = useState('');
+
   const selectedSession = sessions.find((s) => s.id === selectedSessionId) ?? null;
 
   // ── Handlers ────────────────────────────────────────────────────────────
@@ -133,6 +170,51 @@ export default function SplittingStationView({ onNavigate }: SplittingStationVie
     );
     setSealScanPhase('idle');
     setSealScanProgress(0);
+  };
+
+  const handleMarkPulverised = () => {
+    if (!selectedSessionId) return;
+    const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' UTC';
+    setPulvData((prev) => ({
+      ...prev,
+      [selectedSessionId]: {
+        marked: true,
+        openedAt: now,
+        operator: pulvOperator || OPERATORS[0],
+        cctvClipId: pulvCctv || `CAM-04-${now.replace(':', '').replace(' UTC', '')}-001`,
+      },
+    }));
+    // Initialize bagging state if not present
+    setBaggingData((prev) => ({
+      ...prev,
+      [selectedSessionId]: prev[selectedSessionId] ?? {
+        A: { weight: '', sealed: false, sealId: '' },
+        B: { weight: '', sealed: false, sealId: '' },
+        R: { weight: '', sealed: false, sealId: '' },
+      },
+    }));
+  };
+
+  const handleSealAllBags = () => {
+    if (!selectedSessionId || !selectedSession) return;
+    setBaggingData((prev) => {
+      const updated = { ...prev[selectedSessionId] };
+      (['A', 'B', 'R'] as BagType[]).forEach((t) => {
+        updated[t] = { ...updated[t], sealed: true, sealId: bagSealId(selectedSession.parentId, t) };
+      });
+      return { ...prev, [selectedSessionId]: updated };
+    });
+  };
+
+  const handleBagWeightChange = (type: BagType, weight: string) => {
+    if (!selectedSessionId) return;
+    setBaggingData((prev) => ({
+      ...prev,
+      [selectedSessionId]: {
+        ...prev[selectedSessionId],
+        [type]: { ...prev[selectedSessionId][type], weight },
+      },
+    }));
   };
 
   const handleCreateSession = () => {
@@ -475,6 +557,140 @@ export default function SplittingStationView({ onNavigate }: SplittingStationVie
               </div>
             </div>
           </div>
+
+          {/* ── Pulverisation Log ──────────────────────────────────────── */}
+          {(activeStatus === 'IN_PROGRESS' || activeStatus === 'COMPLETED') && selectedSessionId && (() => {
+            const pulv = pulvData[selectedSessionId] ?? { marked: false, openedAt: '', operator: '', cctvClipId: '' };
+            return (
+              <div className="bg-white border border-border-slate rounded-2xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="font-bold text-xl text-text-slate-900 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 text-xs font-bold flex items-center justify-center">03</span>
+                    Pulverisation Log
+                  </h2>
+                  {pulv.marked && (
+                    <span className="text-[10px] font-bold text-success-emerald bg-success-emerald/10 px-3 py-1 rounded-full border border-success-emerald/20 uppercase tracking-widest">
+                      Parent Bag Opened
+                    </span>
+                  )}
+                </div>
+                {pulv.marked ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Authorized Workstation', val: 'PU-03 (Pulveriser Unit 3)' },
+                      { label: 'Opening Time',           val: pulv.openedAt },
+                      { label: 'Operator',               val: pulv.operator },
+                      { label: 'CCTV Clip ID',           val: pulv.cctvClipId },
+                    ].map((row) => (
+                      <div key={row.label} className="bg-slate-50 p-4 rounded-xl border border-border-slate">
+                        <p className="label-caps text-[9px] mb-1">{row.label}</p>
+                        <p className="data-mono text-xs font-bold text-text-slate-900">{row.val}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="label-caps">Authorized Workstation</label>
+                      <div className="px-3 py-2.5 bg-slate-50 border border-border-slate rounded-xl data-mono text-xs font-bold text-text-slate-500">PU-03 (Pulveriser Unit 3)</div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="label-caps">Operator <span className="text-red-500">*</span></label>
+                      <select value={pulvOperator} onChange={(e) => setPulvOperator(e.target.value)}
+                        className="w-full bg-slate-50 border border-border-slate rounded-xl p-2.5 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none">
+                        <option value="">Select operator...</option>
+                        {OPERATORS.map((op) => <option key={op}>{op}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="label-caps">CCTV Clip ID</label>
+                      <input value={pulvCctv} onChange={(e) => setPulvCctv(e.target.value)}
+                        placeholder="auto-generated on mark"
+                        className="w-full bg-slate-50 border border-border-slate rounded-xl p-2.5 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none placeholder:text-slate-300" />
+                    </div>
+                    <div className="md:col-span-3">
+                      <button onClick={handleMarkPulverised}
+                        className="px-6 py-2.5 bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg hover:brightness-110 transition-all flex items-center gap-2">
+                        Mark Parent QR as Opened — Pulverisation In Progress
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ── Small Bagging ──────────────────────────────────────────── */}
+          {selectedSessionId && pulvData[selectedSessionId]?.marked && (() => {
+            const bags = baggingData[selectedSessionId] ?? {
+              A: { weight: '', sealed: false, sealId: '' },
+              B: { weight: '', sealed: false, sealId: '' },
+              R: { weight: '', sealed: false, sealId: '' },
+            };
+            const allSealed = (['A', 'B', 'R'] as BagType[]).every((t) => bags[t].sealed);
+            const BAG_LABELS: Record<BagType, string> = { A: 'Sample A', B: 'Sample B', R: 'Referee' };
+            const BAG_TARGETS: Record<BagType, string> = { A: '2.00', B: '5.00', R: '8.20' };
+            return (
+              <div className="bg-white border border-border-slate rounded-2xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="font-bold text-xl text-text-slate-900 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 text-xs font-bold flex items-center justify-center">04</span>
+                    Small Bagging — Child QR Seal Generation
+                  </h2>
+                  {allSealed && (
+                    <span className="text-[10px] font-bold text-success-emerald bg-success-emerald/10 px-3 py-1 rounded-full border border-success-emerald/20 uppercase tracking-widest">All Bags Sealed</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {(['A', 'B', 'R'] as BagType[]).map((type) => {
+                    const bag = bags[type];
+                    return (
+                      <div key={type} className={`border rounded-2xl p-5 ${bag.sealed ? 'border-success-emerald/30 bg-emerald-50/30' : 'border-border-slate bg-white'}`}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p className="label-caps text-[9px] mb-0.5">Bag Type</p>
+                            <p className="font-bold text-text-slate-900">{BAG_LABELS[type]}</p>
+                          </div>
+                          {bag.sealed && <CheckCircle2 size={20} className="text-success-emerald" />}
+                        </div>
+                        {bag.sealed ? (
+                          <div className="space-y-1.5">
+                            <p className="data-mono text-xs font-bold text-success-emerald">{bag.sealId}</p>
+                            <p className="text-[10px] text-text-slate-400">{bag.weight} kg · QR Sealed</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="space-y-1">
+                              <label className="label-caps">Weight (kg)</label>
+                              <input
+                                type="number" step="0.01"
+                                placeholder={BAG_TARGETS[type]}
+                                value={bag.weight}
+                                onChange={(e) => handleBagWeightChange(type, e.target.value)}
+                                className="w-full bg-slate-50 border border-border-slate rounded-xl p-2 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none"
+                              />
+                            </div>
+                            <p className="text-[10px] text-text-slate-400">Target: {BAG_TARGETS[type]} kg</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {!allSealed && (
+                  <button onClick={handleSealAllBags}
+                    className="px-6 py-2.5 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg hover:brightness-110 transition-all flex items-center gap-2">
+                    <QrCode size={16} /> Seal All Child Bags — Generate QR Seals
+                  </button>
+                )}
+                {allSealed && (
+                  <div className="bg-success-emerald/5 border border-success-emerald/20 rounded-xl p-4 text-sm font-bold text-success-emerald flex items-center gap-3">
+                    <CheckCircle2 size={18} /> Child bag QR seals generated. Proceed to sub-sample extraction and lab dispatch.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 

@@ -1,12 +1,22 @@
+import { useState } from 'react';
 import { Search, ChevronRight } from 'lucide-react';
 import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
 import type { ViewType } from '../types';
+
+const LAB_RECEIVERS = ['S. Reddy (OPR-956)', 'K. Nair (OPR-901)', 'R. Iyer (OPR-802)'];
 
 interface LabReceivingViewProps {
   onNavigate: (view: ViewType) => void;
 }
 
 export default function LabReceivingView({ onNavigate }: LabReceivingViewProps) {
+  const [receiptRecord, setReceiptRecord] = useState({
+    receiver: '',
+    acceptanceStatus: '' as '' | 'accepted' | 'conditional' | 'rejected',
+    visualCondition: '' as '' | 'intact' | 'seal-damaged' | 'label-damaged',
+  });
+  const receiptTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' UTC';
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <ProcessBreadcrumb currentStep={5} onNavigate={onNavigate} />
@@ -47,8 +57,61 @@ export default function LabReceivingView({ onNavigate }: LabReceivingViewProps) 
                    <button className="bg-primary-indigo text-white p-2 rounded-lg hover:brightness-110 shadow-md shadow-indigo-100"><Search size={20}/></button>
                 </div>
               </div>
-              <div className="border-2 border-dashed border-border-slate rounded-xl h-32 flex flex-col items-center justify-center text-text-slate-400 text-sm font-medium">
+              <div className="border-2 border-dashed border-border-slate rounded-xl h-28 flex flex-col items-center justify-center text-text-slate-400 text-sm font-medium">
                 <p>Awaiting scanner input...</p>
+              </div>
+
+              {/* Receipt Record */}
+              <div className="pt-4 border-t border-border-slate space-y-3">
+                <p className="text-[10px] font-bold text-primary-indigo uppercase tracking-widest">Receipt Record</p>
+                <div className="space-y-1.5">
+                  <label className="label-caps">Lab Receiver</label>
+                  <select
+                    value={receiptRecord.receiver}
+                    onChange={(e) => setReceiptRecord((r) => ({ ...r, receiver: e.target.value }))}
+                    className="w-full bg-slate-50 border border-border-slate rounded-xl p-2.5 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none"
+                  >
+                    <option value="">Select receiver...</option>
+                    {LAB_RECEIVERS.map((r) => <option key={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="label-caps">Receipt Time</label>
+                  <div className="px-3 py-2.5 bg-slate-50 border border-border-slate rounded-xl text-xs data-mono font-bold text-text-slate-500">{receiptTime}</div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="label-caps">Acceptance Status</label>
+                  <div className="flex gap-2">
+                    {(['accepted', 'conditional', 'rejected'] as const).map((s) => (
+                      <button key={s}
+                        onClick={() => setReceiptRecord((r) => ({ ...r, acceptanceStatus: s }))}
+                        className={`flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all capitalize ${
+                          receiptRecord.acceptanceStatus === s
+                            ? s === 'accepted' ? 'bg-success-emerald text-white border-success-emerald'
+                              : s === 'conditional' ? 'bg-warning-amber text-white border-warning-amber'
+                              : 'bg-red-500 text-white border-red-500'
+                            : 'bg-white text-text-slate-500 border-border-slate hover:border-primary-indigo'
+                        }`}
+                      >{s}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="label-caps">Visual Condition</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {(['intact', 'seal-damaged', 'label-damaged'] as const).map((c) => (
+                      <button key={c}
+                        onClick={() => setReceiptRecord((r) => ({ ...r, visualCondition: c }))}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${
+                          receiptRecord.visualCondition === c
+                            ? c === 'intact' ? 'bg-success-emerald text-white border-success-emerald'
+                              : 'bg-warning-amber text-white border-warning-amber'
+                            : 'bg-white text-text-slate-500 border-border-slate hover:border-primary-indigo'
+                        }`}
+                      >{c.replace('-', ' ')}</button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
