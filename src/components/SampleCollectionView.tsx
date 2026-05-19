@@ -20,10 +20,32 @@ const COLLECTORS = [
 
 const RACK_IDS = ['RCK-9901-A', 'RCK-9902-B', 'RCK-9903-X', 'RCK-9904-L'];
 
+interface Consignment {
+  id: string;
+  rackId: string;
+  origin: string;
+  plant: string;
+  status: 'ACTIVE' | 'IN_TRANSIT' | 'QUEUED';
+}
+
+const CONSIGNMENTS: Consignment[] = [
+  { id: 'CNS-2024-001', rackId: 'RCK-9901-A', origin: 'Bermo Mine / Kargali, Bokaro',   plant: 'Bodor TPS-A',       status: 'ACTIVE'    },
+  { id: 'CNS-2024-002', rackId: 'RCK-9902-B', origin: 'Barjora (North) Block, Bankura', plant: 'Mejia TPS',         status: 'IN_TRANSIT' },
+  { id: 'CNS-2024-003', rackId: 'RCK-9903-X', origin: 'Gondulpara Block, Hazaribagh',   plant: 'Raghunathpur TPS',  status: 'QUEUED'    },
+  { id: 'CNS-2024-004', rackId: 'RCK-9904-L', origin: 'Mandakini-B via CIL, Odisha',    plant: 'Chandrapura TPS',   status: 'ACTIVE'    },
+];
+
+const CONSIGNMENT_STATUS_STYLES: Record<Consignment['status'], string> = {
+  ACTIVE:     'bg-success-emerald/10 text-success-emerald',
+  IN_TRANSIT: 'bg-primary-indigo/10 text-primary-indigo',
+  QUEUED:     'bg-warning-amber/10 text-warning-amber',
+};
+
 type SourceType = 'TRACK_HOPPER' | 'WAGON_TIPPLER';
 
 interface CollectionRecord {
   parentId: string;
+  consignmentId: string;
   sourceType: SourceType;
   equipmentId: string;
   rackId: string;
@@ -36,9 +58,9 @@ interface CollectionRecord {
 }
 
 const INITIAL_RECORDS: CollectionRecord[] = [
-  { parentId: 'PRNT-8822-X', sourceType: 'TRACK_HOPPER', equipmentId: 'TH-07', rackId: 'RCK-9901-A', wagonNum: 'WGN-0034', collector: 'OPR-774 (J. Doe)',    collectedAt: '14:20 UTC', sealNum: 'QRL-SEC-8822-HY77-1', rfidTag: 'RFID-88220-TH7', status: 'IN_TRANSIT' },
-  { parentId: 'PRNT-8820-A', sourceType: 'WAGON_TIPPLER', equipmentId: 'WT-03', rackId: 'RCK-9901-A', wagonNum: 'WGN-0028', collector: 'OPR-312 (R. Kumar)', collectedAt: '13:05 UTC', sealNum: 'QRL-SEC-8820-KL42-2', rfidTag: 'RFID-88200-WT3', status: 'IN_TRANSIT' },
-  { parentId: 'PRNT-8818-B', sourceType: 'TRACK_HOPPER', equipmentId: 'TH-02', rackId: 'RCK-9902-B', wagonNum: 'WGN-0012', collector: 'OPR-774 (J. Doe)',    collectedAt: '11:30 UTC', sealNum: 'QRL-SEC-8818-MN91-3', rfidTag: 'RFID-88180-TH2', status: 'IN_TRANSIT' },
+  { parentId: 'PRNT-8822-X', consignmentId: 'CNS-2024-001', sourceType: 'TRACK_HOPPER',  equipmentId: 'TH-07', rackId: 'RCK-9901-A', wagonNum: 'WGN-0034', collector: 'OPR-774 (J. Doe)',    collectedAt: '14:20 UTC', sealNum: 'QRL-SEC-8822-HY77-1', rfidTag: 'RFID-88220-TH7', status: 'IN_TRANSIT' },
+  { parentId: 'PRNT-8820-A', consignmentId: 'CNS-2024-001', sourceType: 'WAGON_TIPPLER', equipmentId: 'WT-03', rackId: 'RCK-9901-A', wagonNum: 'WGN-0028', collector: 'OPR-312 (R. Kumar)', collectedAt: '13:05 UTC', sealNum: 'QRL-SEC-8820-KL42-2', rfidTag: 'RFID-88200-WT3', status: 'IN_TRANSIT' },
+  { parentId: 'PRNT-8818-B', consignmentId: 'CNS-2024-002', sourceType: 'TRACK_HOPPER',  equipmentId: 'TH-02', rackId: 'RCK-9902-B', wagonNum: 'WGN-0012', collector: 'OPR-774 (J. Doe)',    collectedAt: '11:30 UTC', sealNum: 'QRL-SEC-8818-MN91-3', rfidTag: 'RFID-88180-TH2', status: 'IN_TRANSIT' },
 ];
 
 // Generate next parent ID (simple counter)
@@ -48,6 +70,7 @@ function nextParentId(): string {
 }
 
 export default function SampleCollectionView({ onNavigate }: SampleCollectionViewProps) {
+  const [consignmentId, setConsignmentId] = useState('');
   const [sourceType, setSourceType] = useState<SourceType>('TRACK_HOPPER');
   const [equipmentId, setEquipmentId] = useState('');
   const [rackId, setRackId] = useState('');
@@ -62,11 +85,12 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
 
   const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' UTC';
 
-  const isFormValid = equipmentId && rackId && wagonNum && collector && sealNum && rfidTag;
+  const isFormValid = consignmentId && equipmentId && rackId && wagonNum && collector && sealNum && rfidTag;
 
   const handleGenerate = () => {
     const record: CollectionRecord = {
       parentId: nextParentId(),
+      consignmentId,
       sourceType,
       equipmentId,
       rackId,
@@ -87,6 +111,7 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
     setGeneratedRecord(null);
     setConfirmed(true);
     // Reset form
+    setConsignmentId('');
     setEquipmentId('');
     setRackId('');
     setWagonNum('');
@@ -127,6 +152,38 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
               <p className="text-[10px] text-text-slate-400 mt-0.5">Fill all fields to generate the parent QR seal</p>
             </div>
             <div className="p-6 space-y-5">
+
+              {/* Consignment selector — first field */}
+              <div className="space-y-1.5">
+                <label className="label-caps">Consignment <span className="text-red-500">*</span></label>
+                <select
+                  value={consignmentId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setConsignmentId(id);
+                    const c = CONSIGNMENTS.find((c) => c.id === id);
+                    if (c) setRackId(c.rackId);
+                  }}
+                  className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none"
+                >
+                  <option value="">Select consignment...</option>
+                  {CONSIGNMENTS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.id} — {c.origin} → {c.plant}
+                    </option>
+                  ))}
+                </select>
+                {consignmentId && (() => {
+                  const c = CONSIGNMENTS.find((c) => c.id === consignmentId);
+                  if (!c) return null;
+                  return (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest ${CONSIGNMENT_STATUS_STYLES[c.status]}`}>{c.status.replace('_', ' ')}</span>
+                      <span className="text-[10px] text-text-slate-400 font-medium">{c.plant} · {c.rackId}</span>
+                    </div>
+                  );
+                })()}
+              </div>
 
               {/* Sample Source */}
               <div className="space-y-2">
@@ -327,6 +384,10 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
 
                       {/* Label footer */}
                       <div className="bg-slate-50 border-t border-slate-200 px-4 py-2 grid grid-cols-2 gap-2 text-[9px]">
+                        <div className="col-span-2">
+                          <p className="text-slate-400 uppercase tracking-widest">Consignment</p>
+                          <p className="font-bold text-slate-700">{generatedRecord.consignmentId}</p>
+                        </div>
                         <div>
                           <p className="text-slate-400 uppercase tracking-widest">Source</p>
                           <p className="font-bold text-slate-700">{generatedRecord.sourceType.replace('_', ' ')} {generatedRecord.equipmentId}</p>
@@ -378,6 +439,7 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
             <thead className="bg-slate-50 text-[10px] font-bold text-text-slate-400 uppercase tracking-widest border-b border-border-slate">
               <tr>
                 <th className="px-6 py-3">Parent ID</th>
+                <th className="px-6 py-3">Consignment</th>
                 <th className="px-6 py-3">Source</th>
                 <th className="px-6 py-3">Rack / Wagon</th>
                 <th className="px-6 py-3">Collector</th>
@@ -390,6 +452,7 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
               {records.map((rec) => (
                 <tr key={rec.parentId} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 data-mono font-bold text-sm text-primary-indigo">{rec.parentId}</td>
+                  <td className="px-6 py-4 data-mono text-xs font-bold text-text-slate-700">{rec.consignmentId}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-xs text-text-slate-600 font-medium">
                       <Package size={13} className="text-text-slate-400" />

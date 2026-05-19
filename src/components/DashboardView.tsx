@@ -94,7 +94,8 @@ export default function DashboardView({ setActiveView }: DashboardViewProps) {
           onClick={() => setActiveView('consignments')}
           className="px-5 py-2.5 bg-primary-indigo text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-100 hover:brightness-110 transition-all flex items-center gap-2"
         >
-          <Plus size={16} /> Register Consignment
+          {/* <Plus size={16} /> */}
+           Register Consignment
         </button>
       </header>
 

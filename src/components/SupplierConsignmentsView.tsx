@@ -3,6 +3,7 @@ import { Plus, X, TrainFront, ShieldCheck, Activity, Search, Settings, Mountain 
 import { motion, AnimatePresence } from 'motion/react';
 import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
 import type { ViewType } from '../types';
+import { script } from 'motion/react-client';
 
 interface SupplierConsignmentsViewProps {
   onNavigate: (view: ViewType) => void;
@@ -28,6 +29,13 @@ const DVC_PLANTS = [
   'Durgapur Steel TPS / Andal TPS (Paschim Bardhaman, West Bengal)',
   'Koderma TPS (Koderma, Jharkhand)',
   'Raghunathpur TPS (Purulia, West Bengal)',
+];
+
+const SOURCE_MINE_OPTIONS = [
+  "ROM",
+  "Washed",
+  "Crushed",
+  "Mixed Grade",
 ];
 
 const SAMPLING_AGENCIES = ['Third Party (CIMFR)', 'Third Party (NABL)', 'Self-Sampling', 'DVC Inspection'];
@@ -64,9 +72,10 @@ export default function SupplierConsignmentsView({ onNavigate }: SupplierConsign
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="px-6 py-2.5 bg-primary-indigo text-white text-[10px] font-bold label-caps rounded-xl shadow-lg shadow-indigo-100 hover:brightness-110 transition-all flex items-center gap-2"
+          className="px-5 py-2.5 bg-primary-indigo text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-100 hover:brightness-110 transition-all flex items-center gap-2"
         >
-          <Plus size={16} /> Register Consignment
+          {/* <Plus size={16} /> Register Consignment */}
+          Register Consignment
         </button>
       </header>
 
@@ -99,7 +108,7 @@ export default function SupplierConsignmentsView({ onNavigate }: SupplierConsign
 
               <div className="p-8 overflow-y-auto space-y-8">
                 {/* Source */}
-                <section className="space-y-5">
+                {/* <section className="space-y-5">
                   <h3 className="font-bold text-[10px] text-text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Source Details</h3>
                   <div className="grid grid-cols-2 gap-5">
                     <div className="space-y-1.5 col-span-2">
@@ -121,7 +130,45 @@ export default function SupplierConsignmentsView({ onNavigate }: SupplierConsign
                       </select>
                     </div>
                   </div>
-                </section>
+                </section> */}
+
+                <section className="space-y-5">
+                    <h3 className="font-bold text-[10px] text-text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                      Source Details
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-5">
+                      <div className="space-y-1.5">
+                        <label className="label-caps">Source Mine</label>
+                        <select className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none">
+                          <option value="">Select source mine...</option>
+                          {DVC_MINES.map((m) => (
+                            <option key={m}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="label-caps">Source Mine Options</label>
+                        <select className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none">
+                          <option value="">Select option...</option>
+                          {SOURCE_MINE_OPTIONS.map((o) => (
+                            <option key={o}>{o}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5 col-span-2">
+                        <label className="label-caps">DVC Receiving Plant</label>
+                        <select className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none">
+                          <option value="">Select receiving plant...</option>
+                          {DVC_PLANTS.map((p) => (
+                            <option key={p}>{p}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </section>
 
                 {/* Quality */}
                 <section className="space-y-5">
@@ -140,13 +187,13 @@ export default function SupplierConsignmentsView({ onNavigate }: SupplierConsign
                       <label className="label-caps">Declared GCV (kCal/kg)</label>
                       <input type="number" defaultValue={3600} className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none" />
                     </div>
-                    <div className="space-y-1.5 col-span-2">
+                    {/* <div className="space-y-1.5 col-span-2">
                       <label className="label-caps">Sampling Agency</label>
                       <select className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none">
                         <option value="">Select agency...</option>
                         {SAMPLING_AGENCIES.map((a) => <option key={a}>{a}</option>)}
                       </select>
-                    </div>
+                    </div> */}
                   </div>
                 </section>
 
@@ -162,24 +209,24 @@ export default function SupplierConsignmentsView({ onNavigate }: SupplierConsign
                       <label className="label-caps">Total Wagon Count</label>
                       <input type="number" defaultValue={58} className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none" />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 col-span-2">
                       <label className="label-caps">ETA</label>
                       <input type="datetime-local" className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none" />
                     </div>
-                    <div className="space-y-1.5">
+                    {/* <div className="space-y-1.5">
                       <label className="label-caps">DVC Plant</label>
                       <select className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none">
                         <option value="">Select destination plant...</option>
                         {DVC_PLANTS.map((p) => <option key={p}>{p}</option>)}
                       </select>
-                    </div>
+                    </div> */}
                   </div>
                 </section>
               </div>
 
               <div className="p-8 border-t border-border-slate bg-slate-50/50 flex gap-4 shrink-0">
                 <button onClick={() => setShowNew(false)} className="flex-1 py-3 bg-white border border-border-slate rounded-xl text-[10px] font-bold label-caps hover:bg-slate-100 transition-all">Cancel</button>
-                <button onClick={() => setShowNew(false)} className="flex-1 py-3 bg-primary-indigo text-white rounded-xl text-[10px] font-bold label-caps shadow-lg shadow-indigo-100 hover:brightness-110 transition-all">Register Consignment</button>
+                <button onClick={() => setShowNew(false)} className="flex-1 px-5 py-2.5 bg-primary-indigo text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-100 hover:brightness-110 transition-all">Register Consignment</button>
               </div>
             </motion.div>
           </div>
