@@ -7,11 +7,11 @@ interface ProcessBreadcrumbProps {
 }
 
 const steps: { label: string; view: ViewType }[] = [
-  { label: 'Consignments',    view: 'consignments' },
-  { label: 'Sample Tracking', view: 'tracking' },
-  { label: 'Prep Room',       view: 'prep-room' },
-  { label: 'Division Station',view: 'division-station' },
-  { label: 'Lab Receiving',   view: 'lab-receiving' },
+  { label: 'Consignment', view: 'consignments' },
+  { label: 'Collection',  view: 'sample-collection' },
+  { label: 'Prep Room',   view: 'prep-room' },
+  { label: 'Division',    view: 'division-station' },
+  { label: 'Lab',         view: 'lab-receiving' },
 ];
 
 export default function ProcessBreadcrumb({ currentStep, onNavigate }: ProcessBreadcrumbProps) {

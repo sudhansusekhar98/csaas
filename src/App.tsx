@@ -14,6 +14,8 @@ import NonConformanceModal from './components/NonConformanceModal';
 import ViewPlaceholder from './components/ViewPlaceholder';
 import DashboardView from './components/DashboardView';
 import ConsignmentsView from './components/ConsignmentsView';
+import SupplierConsignmentsView from './components/SupplierConsignmentsView';
+import SampleCollectionView from './components/SampleCollectionView';
 import SampleTrackingView from './components/SampleTrackingView';
 import LabReceivingView from './components/LabReceivingView';
 import NonConformanceView from './components/NonConformanceView';
@@ -29,12 +31,14 @@ type NcrStage = 'CONSIGNMENT' | 'COLLECTION' | 'TRANSIT' | 'PREP' | 'DIVISION' |
 
 function deriveNcrStage(view: ViewType): NcrStage {
   switch (view) {
-    case 'consignments': return 'CONSIGNMENT';
-    case 'tracking': return 'TRANSIT';
-    case 'prep-room': return 'PREP';
-    case 'division-station': return 'DIVISION';
-    case 'lab-receiving': return 'LAB';
-    default: return 'CONSIGNMENT';
+    case 'consignments':
+    case 'supplier-consignments': return 'CONSIGNMENT';
+    case 'sample-collection':     return 'COLLECTION';
+    case 'tracking':              return 'TRANSIT';
+    case 'prep-room':             return 'PREP';
+    case 'division-station':      return 'DIVISION';
+    case 'lab-receiving':         return 'LAB';
+    default:                      return 'CONSIGNMENT';
   }
 }
 
@@ -49,6 +53,10 @@ export default function App() {
         return <DashboardView setActiveView={setActiveView} />;
       case 'consignments':
         return <ConsignmentsView onNavigate={setActiveView} />;
+      case 'supplier-consignments':
+        return <SupplierConsignmentsView onNavigate={setActiveView} />;
+      case 'sample-collection':
+        return <SampleCollectionView onNavigate={setActiveView} />;
       case 'tracking':
         return <SampleTrackingView onNavigate={setActiveView} />;
       case 'prep-room':

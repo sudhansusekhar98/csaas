@@ -6,6 +6,8 @@
 export type ViewType =
   | 'dashboard'
   | 'consignments'
+  | 'supplier-consignments'
+  | 'sample-collection'
   | 'tracking'
   | 'prep-room'
   | 'division-station'

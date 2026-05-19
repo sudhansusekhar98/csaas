@@ -14,6 +14,8 @@ import {
   FileBarChart,
   BellRing,
   FlaskConical,
+  Building2,
+  QrCode,
 } from 'lucide-react';
 import type { ViewType } from '../../types';
 
@@ -25,11 +27,13 @@ interface SidebarProps {
 }
 
 const operationsNav = [
-  { id: 'consignments' as ViewType,    label: 'Consignments',    icon: Package },
-  { id: 'tracking' as ViewType,        label: 'Sample Tracking', icon: MapPin },
-  { id: 'prep-room' as ViewType,       label: 'Prep Room',       icon: FlaskConical },
-  { id: 'division-station' as ViewType,label: 'Division Station',icon: SquareSplitVertical },
-  { id: 'lab-receiving' as ViewType,   label: 'Lab Receiving',   icon: Microscope },
+  { id: 'consignments' as ViewType,          label: 'DVC Consignments',      icon: Package },
+  { id: 'supplier-consignments' as ViewType, label: 'Supplier Consignments', icon: Building2 },
+  { id: 'sample-collection' as ViewType,     label: 'Sample Collection',     icon: QrCode },
+  { id: 'tracking' as ViewType,              label: 'Sample Tracking',       icon: MapPin },
+  { id: 'prep-room' as ViewType,             label: 'Prep Room',             icon: FlaskConical },
+  { id: 'division-station' as ViewType,      label: 'Division Station',      icon: SquareSplitVertical },
+  { id: 'lab-receiving' as ViewType,         label: 'Lab Receiving',         icon: Microscope },
 ];
 
 const qualityNav = [
