@@ -9,7 +9,7 @@ import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
 import type { ViewType, StepEvent, ViewMode } from '../types';
 import {
   SAMPLES, STEP_DEFINITIONS, STEP_EVENTS, CHILD_SAMPLES,
-  buildParentRoute, buildChildRoutes,
+  buildParentRoute, buildChildRoutes, FRS_FACE_URL,
 } from '../data/sample-tracking-mock';
 import SnakeStepper, { buildStepperNodes } from './sample-tracking/SnakeStepper';
 import ChildSamplePanel from './sample-tracking/ChildSamplePanel';
@@ -198,8 +198,8 @@ export default function SampleTrackingView({ onNavigate }: SampleTrackingViewPro
       {/* Content */}
       <div className="space-y-10">
         <div className="grid grid-cols-12 gap-10">
-          {/* Left: snake stepper or map (col-span-8) */}
-          <div className="col-span-12 lg:col-span-8 space-y-6">
+          {/* Left: snake stepper or map (col-span-7) */}
+          <div className="col-span-12 lg:col-span-7 space-y-6">
 
             {/* ── Stepper card (hidden when map mode) ─────────────────────── */}
             <div className={viewMode === 'stepper' ? '' : 'hidden'}>
@@ -244,12 +244,12 @@ export default function SampleTrackingView({ onNavigate }: SampleTrackingViewPro
           </div>
 
           {/* Right column */}
-          <div className="col-span-12 lg:col-span-4 space-y-8">
+          <div className="col-span-12 lg:col-span-5 space-y-8">
             <div className="bg-white border border-border-slate rounded-2xl p-8 shadow-sm group overflow-hidden relative">
               <div className="relative z-10">
                 <h3 className="font-bold text-xs uppercase tracking-widest text-text-slate-900 mb-8 border-b border-slate-50 pb-4">Biometric Verification</h3>
-                <div className="aspect-video bg-slate-950 rounded-2xl shadow-inner relative overflow-hidden flex items-center justify-center p-6 border-2 border-slate-900 group-hover:border-primary-indigo transition-all duration-500">
-                  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAusVLjgyMEPhqIUohKcNCJckgO8RiFkioBGLbw7X1RNmZLgR-b3pWJCrxb5jc__DN-W-FpQVFVVTXwNChn4pys9-zSb4T_pDAJeWV2ON9T1LDoknY1INqisVnPvxM1oDzDMduWyQs_NviSrjsWgDrU60fK966k2V-iMkSfMGu5FmrBomsTfLVVZB7xO9eiyQdTyrCdpobL-qdOPfUtUjc6_FgzddB2brGRJbnBI5KpJsbHq5_i1ZlQnzg06o-hxykSrzAbLtFyC-gs" className="w-full h-full object-cover opacity-60 mix-blend-overlay grayscale group-hover:grayscale-0 transition-all duration-700" alt="Face Analytics" />
+                <div className="aspect-[2.2/1] bg-slate-950 rounded-2xl shadow-inner relative overflow-hidden flex items-center justify-center p-6 border-2 border-slate-900 group-hover:border-primary-indigo transition-all duration-500">
+                  <img src={FRS_FACE_URL} className="w-full h-full object-cover opacity-80 grayscale group-hover:grayscale-0 transition-all duration-700" alt="Face Analytics" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-40 h-40 border border-primary-indigo/80 m-4 rounded relative shadow-[0_0_30px_rgba(79,70,229,0.5)]">
                       <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-primary-indigo" />
