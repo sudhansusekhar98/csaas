@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 // ── Shared FRS face image (prototype demo) ────────────────────────────────────
-export const FRS_FACE_URL = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAusVLjgyMEPhqIUohKcNCJckgO8RiFkioBGLbw7X1RNmZLgR-b3pWJCrxb5jc__DN-W-FpQVFVVTXwNChn4pys9-zSb4T_pDAJeWV2ON9T1LDoknY1INqisVnPvxM1oDzDMduWyQs_NviSrjsWgDrU60fK966k2V-iMkSfMGu5FmrsBomsTfLVVZB7xO9eiyQdTyrCdpobL-qdOPfUtUjc6_FgzddB2brGRJbnBI5KpJsbHq5_i1ZlQnzg06o-hxykSrzAbLtFyC-gs';
+export const FRS_FACE_URL = '/frs-face-coal-collected.png';
 
 // ── Samples ───────────────────────────────────────────────────────────────────
 export interface SampleOption {
