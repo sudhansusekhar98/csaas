@@ -1,49 +1,47 @@
-# Implementation Plan: Sample Tracking — Snake Stepper, Child Visibility & GPS Map View
+# Implementation Plan: Location Assignment Integration, Child Nomenclature & Reprint in Tracking
 
-**Branch**: `009-tracking-stepper-map` | **Date**: 2026-05-19 | **Spec**: [spec.md](./spec.md)
+**Branch**: `009-tracking-stepper-map` | **Date**: 2026-05-22 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `/specs/009-tracking-stepper-map/spec.md`
+**Input**: User request — three targeted changes to `SplittingStationView` and `ChildSamplePanel`:
+1. Move location/dispatch assignment into the same panel where weight and responsible persons are selected (no separate card below the grid).
+2. Update child sample bag labels to include the parent sample ID.
+3. Add QR reprint request functionality to the Child Samples panel in Sample Tracking (same `ReprintRequestModal` flow already live in Sample Collection and Division Station).
+
+---
 
 ## Summary
 
-Replace the vertical 12-step Process Protocol Stepper on the Sample Tracking page with a snake-wise horizontal layout that fits a 1440×900 viewport without scrolling, surface per-child lifecycle status from Step 9 (Division Logic) onward in a dedicated panel that re-scopes the stepper's post-division segment, and add a Map View toggle that plots each scan event on a geographic map using the GPS coordinate captured at scan time — reusing the existing step detail popup for both stepper-click and pin-click affordances.
+All three changes are scoped to existing components. No new views, routes, or data shapes are required. The reprint wiring for `SampleTrackingView` follows the identical prop-drilling pattern already used by `SampleCollectionView` and `SplittingStationView`.
 
-Implementation is entirely a client-side React/TypeScript change on the existing single-page prototype, scoped to `src/components/SampleTrackingView.tsx` and a small number of new presentational components. The map uses `react-leaflet` with OpenStreetMap tiles (no API key); GPS coordinates are added as static demo data per step template, anchored around a notional Indian coal-handling facility. Parent–child sample shape is aligned with the data model already drafted in spec 007 (`child-sample-lab-handover`).
+---
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.8, React 19.0.1, ES2022 modules
+**Language/Version**: TypeScript 5.x / React 19 (Vite)
 
-**Primary Dependencies**: `react` 19, `motion/react` (12.23), `lucide-react` (0.546), Tailwind CSS 4.1, Vite 6.2 — all already present. New: `react-leaflet` (^4.2) + `leaflet` (^1.9) for the Map View.
+**Primary Dependencies**: `motion/react`, `lucide-react`, Tailwind CSS (existing)
 
-**Storage**: None — in-memory React state on canned demo data structures (`SAMPLES`, `STEP_TEMPLATES`, new `CHILD_SAMPLES`).
+**Storage**: In-memory React state; `reprintRequests` lifted to `App.tsx`
 
-**Testing**: Manual demo validation (per existing prototype convention); `tsc --noEmit` for type safety via `npm run lint`. No unit test framework is currently configured in this prototype, and adding one is out of scope.
+**Testing**: Manual browser verification (prototype — no unit test suite)
 
-**Target Platform**: Modern evergreen browsers (Chrome / Edge / Firefox / Safari) on desktop; primary demo target is a 1440×900 viewport. Tablet (≥768px) supported as graceful degradation; <480px allowed to fall back to vertical stack.
+**Target Platform**: Desktop browser, 1440×900 primary viewport
 
-**Project Type**: Single-page web application (Vite + React) — `src/` only, no backend.
+**Project Type**: Web application (single-page prototype)
 
-**Performance Goals**: View-mode toggle visible transition < 400 ms (matches SC-003). Map first paint with pins < 500 ms on a typical demo laptop. No re-fetch on toggle.
+**Performance Goals**: View transitions < 400 ms (SC-003, existing)
 
-**Constraints**: Must not regress the existing step detail popup, sample dropdown, scan overlay, or process breadcrumb. Must not alter unrelated routes/views. Tile loading must work over standard internet (no offline requirement); a sensible empty-tile fallback acceptable for demo.
+**Constraints**: No new views, no new npm packages, no new `ViewType` values
 
-**Scale/Scope**: 5 canned parent samples (existing), 2–3 children per parent past Step 9 (new), 12 step nodes per sample, ≤ 12 GPS pins per parent route + ≤ 4 per child route. Total LOC delta target: ~600–900 lines in `SampleTrackingView.tsx` + 3 new files.
+**Scale/Scope**: 4 files modified, 1 prop interface extended, 0 new files
+
+---
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+The project constitution file is the blank template — no project-specific gates are defined. No violations to report.
 
-The project constitution at `.specify/memory/constitution.md` is currently a placeholder template with no ratified principles (sections still contain `[PRINCIPLE_N_NAME]` markers). No concrete gates can be evaluated, so this check is **informational only** and treated as passing by default. If/when the constitution is filled in (e.g., test-first, complexity caps, etc.), this plan should be re-evaluated against those principles.
-
-Self-imposed gates we are honouring anyway:
-
-- **No regressions** to existing Sample Tracking interactions (popup, scan overlay, dropdown).
-- **Reuse over rewrite**: step detail popup is shared by stepper clicks and map pin clicks.
-- **No new global state library**: stays on React's `useState` / derived state — same pattern as the rest of the prototype.
-- **No new design tokens**: all new UI uses existing CSAAS Tailwind tokens (primary indigo, success emerald, slate scale, label-caps).
-
-→ **GATE: PASS (informational)**.
+---
 
 ## Project Structure
 
@@ -52,36 +50,157 @@ Self-imposed gates we are honouring anyway:
 ```text
 specs/009-tracking-stepper-map/
 ├── plan.md              # This file
-├── research.md          # Phase 0 output
-├── data-model.md        # Phase 1 output
-├── quickstart.md        # Phase 1 output
+├── research.md          # Updated with findings for this batch
+├── data-model.md        # Unchanged — no new TypeScript shapes needed
+├── quickstart.md        # Updated with new test flows
 ├── contracts/
-│   └── screen-contract.md   # UI contract for the Sample Tracking screen
-└── checklists/
-    └── requirements.md      # From /speckit-specify
+│   └── screen-contract.md   # Updated with new panel layout
+└── tasks.md             # Phase 2 output (/speckit-tasks command)
 ```
 
-### Source Code (repository root)
+### Source Code (files changed)
 
 ```text
 src/
+├── App.tsx                                      # Pass reprintRequests/setReprintRequests into SampleTrackingView
 ├── components/
-│   ├── SampleTrackingView.tsx          # MODIFIED — adds snake stepper, child panel, view-mode toggle
-│   └── sample-tracking/                # NEW subfolder for feature-scoped pieces
-│       ├── SnakeStepper.tsx            # NEW — horizontal snake stepper with connectors
-│       ├── ChildSamplePanel.tsx        # NEW — children list with mini-status indicators
-│       └── SampleMapView.tsx           # NEW — react-leaflet map with parent+child routes
-├── data/
-│   └── sample-tracking-mock.ts         # NEW — extracted demo data: parents, children, step events, GPS coords
-└── types.ts                            # MODIFIED — add Coord, ChildSample, SampleRoute, ViewMode types
+│   ├── SplittingStationView.tsx                 # Changes A1 (location in-panel) + A2 (nomenclature)
+│   └── sample-tracking/
+│       └── ChildSamplePanel.tsx                 # Change B1 (reprint buttons)
+└── (SampleTrackingView.tsx — prop thread only)  # Change B2 (thread reprint props)
 ```
 
-**Structure Decision**: Single-project layout (the existing Vite SPA). All work lives under `src/`. New components nest under `src/components/sample-tracking/` to keep the feature surface coherent and avoid bloating the components root. Canned data is moved out of the component file into `src/data/sample-tracking-mock.ts` to keep `SampleTrackingView.tsx` focused on rendering and state.
+---
+
+## Change Set A — SplittingStationView
+
+### A1: Location Assignment Moved Inside SmallBaggingPanel
+
+**Current behaviour**: After all bags are sealed, an `AllocationCard` appears as a `col-span-12` card *below* the 12-column grid (outside `SmallBaggingPanel`). The "Finalise Division Session" button is inside `SmallBaggingPanel`, so the operator must seal → scroll down → confirm dispatch → scroll back up → finalise — a fragmented flow.
+
+**Target behaviour**: The `AllocationCard` renders *inside* `SmallBaggingPanel`, replacing the "Finalise Division Session" button until dispatch is confirmed. After the operator clicks "Confirm Dispatch", the allocation summary appears and the "Finalise" button becomes available — all within the same right-column panel. The `col-span-12` card below the grid is removed entirely.
+
+**Implementation**:
+
+1. Add props to `SmallBaggingPanelProps`:
+   ```ts
+   dispatchLocations: DispatchLocation[];
+   confirmedAllocation: BagAllocation[] | null;
+   onConfirmAllocation: (allocs: BagAllocation[]) => void;
+   ```
+
+2. Inside `SmallBaggingPanel`, when `allSealed && activeStatus !== 'COMPLETED'`:
+   - If `confirmedAllocation === null` → render `<AllocationCard>` (with the passed `dispatchLocations` and `parentId`-aware labels).
+   - If `confirmedAllocation !== null` → render a compact read-only allocation summary + the "Finalise Division Session" button.
+
+3. Remove the external `col-span-12` block in `SplittingStationView` (lines ~597–628 in current file).
+
+4. Pass `bagAllocations[selectedSession.id]` and `setBagAllocations` callback down as the new props.
+
+5. `AllocationCard` also needs `parentId` to build the new nomenclature (see A2).
+
+**Key invariant**: The `allBagsSealed` guard remains unchanged — allocation only appears when every active bag type has `sealed: true`.
+
+---
+
+### A2: Child Sample Nomenclature Includes Parent ID
+
+**Current behaviour**: Bag labels are generic — "Sample A", "Sample B", "Referee", "Sample D", "Sample E" (from `BAG_LABEL_SEQUENCE`). The allocation summary shows "Sample -01 (Bag A)", "Sample -02 (Bag B)".
+
+**Target behaviour**: Labels include the parent sample ID so the child's lineage is immediately readable:
+- Bag type `A` of parent `PRNT-8822-X` → label **`PRNT-8822-X-A`**
+- Bag type `B` → **`PRNT-8822-X-B`**
+- Bag type `R` → **`PRNT-8822-X-R`**
+- etc.
+
+**Implementation**:
+
+```ts
+// Replace BAG_LABEL_SEQUENCE usage wherever a label is displayed
+function childLabel(parentId: string, bagType: BagType): string {
+  return `${parentId}-${bagType}`;
+}
+```
+
+Apply in:
+- `SmallBaggingPanel` bag cards (the `bagLabel` variable, currently `BAG_LABEL_SEQUENCE[idx]`)
+- `AllocationCard` rows ("Sample -01 (Bag A)" → `PRNT-8822-X-A`)
+- Completed session bag list in `SmallBaggingPanel`
+- The session list table column "Splits" tooltip (minor — currently just shows bag count, no label change needed)
+
+The `BAG_LABEL_SEQUENCE` constant can be kept for the seal-verified overlay tooltip (`'Sample A, Sample B, …'` listed under the child count input) since that overlay doesn't have the parentId in context — or pass `parentId` in if the overlay is open while a session is selected (it is: `selectedSession` is available). Both options are acceptable; passing `parentId` is preferred for consistency.
+
+---
+
+## Change Set B — QR Reprint in Child Samples Panel (Sample Tracking)
+
+### B1: Reprint Buttons in ChildSamplePanel
+
+**Current behaviour**: `ChildSamplePanel` shows each lab-bound child sample row with division badge, ID, current step name, and three step-pip indicators. No reprint affordance exists.
+
+**Target behaviour**: Each child row gains a "Request Reprint" / "Reprint Pending" / "Reprint Approved" control identical in pattern to the one already in `SplittingStationView`'s `SmallBaggingPanel` (lines ~950–962).
+
+**New props for `ChildSamplePanel`**:
+```ts
+onRequestReprint: (sampleId: string) => void;
+approvedReprintIds: Set<string>;
+pendingReprintIds: Set<string>;
+```
+
+Each child `<li>` row adds (below the step pips):
+```tsx
+{pendingReprintIds.has(child.id)
+  ? <span …>Reprint Pending</span>
+  : approvedReprintIds.has(child.id)
+  ? <span …>Reprint Approved — Print Now</span>
+  : <button onClick={() => onRequestReprint(child.id)} …>Request Reprint</button>
+}
+```
+
+### B2: Thread Reprint Props Through SampleTrackingView
+
+`SampleTrackingView` currently receives no reprint props (App.tsx line 82: `<SampleTrackingView onNavigate={setActiveView} />`).
+
+**App.tsx change**:
+```tsx
+case 'tracking':
+  return <SampleTrackingView
+    onNavigate={setActiveView}
+    reprintRequests={reprintRequests}
+    setReprintRequests={setReprintRequests}
+  />;
+```
+
+**SampleTrackingView** adds:
+```ts
+interface SampleTrackingViewProps {
+  onNavigate: (view: ViewType) => void;
+  reprintRequests: ReprintRequest[];
+  setReprintRequests: React.Dispatch<React.SetStateAction<ReprintRequest[]>>;
+}
+```
+
+Inside `SampleTrackingView`, derive the same sets used elsewhere:
+```ts
+const approvedReprintIds = new Set(reprintRequests.filter(r => r.status === 'approved').map(r => r.sampleId));
+const pendingReprintIds  = new Set(reprintRequests.filter(r => r.status === 'pending').map(r => r.sampleId));
+```
+
+Add `reprintModalSampleId: string | null` state. Pass `onRequestReprint`, `approvedReprintIds`, `pendingReprintIds` into `ChildSamplePanel`. Render `<ReprintRequestModal>` when `reprintModalSampleId !== null`, with `qrType="child"` and the active operator from the selected sample's most recent event.
+
+---
+
+## Implementation Order
+
+1. **A2 first** — `childLabel()` helper is pure and affects how labels render in A1's new `AllocationCard` placement. Define it once, import everywhere.
+2. **A1** — Move `AllocationCard` inside `SmallBaggingPanel`; update prop interface; remove external card.
+3. **B1** — Extend `ChildSamplePanel` props and add reprint controls to each row.
+4. **B2** — Thread `reprintRequests` / `setReprintRequests` into `SampleTrackingView` → `ChildSamplePanel`; add modal.
+
+No migrations, no DB changes, no new npm packages.
+
+---
 
 ## Complexity Tracking
 
-No constitution violations to justify. One judgment call worth noting:
-
-| Decision | Why | Alternative considered |
-|---|---|---|
-| Add `react-leaflet` + `leaflet` as new deps | The user explicitly asked for a "Map View … using the operator's GPS"; an SVG-fake of a facility map would not honour the request and forecloses any later swap to real device coords. Leaflet is BSD-licensed, key-free with OSM tiles, ~140 KB gzip — acceptable for a prototype. | SVG illustrated site-plan with positioned dots (no extra deps). Rejected because it can't pan/zoom and reviewers asked for an actual map. Mapbox GL / Google Maps rejected: require API keys, friction for a demo. |
+No constitution violations. No new complexity to justify.

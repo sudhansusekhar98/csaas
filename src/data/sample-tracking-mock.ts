@@ -92,11 +92,14 @@ export const STEP_EVENTS: Record<string, StepEvent[]> = Object.fromEntries(
 );
 
 // ── Child samples (post-division, step index 9+) ──────────────────────────────
+// Only the lab-bound child (-01) per parent is tracked here.
+// Non-lab children (-02, -03...) go to dispatch locations and are not recorded.
 export const CHILD_SAMPLES: ChildSample[] = [
   {
-    id: 'CHLD-8810-D-A',
+    id: 'CHLD-8810-D-01',
     parentId: 'PRNT-8810-D',
-    divisionLabel: 'A',
+    divisionLabel: 'LAB',
+    isLabBound: true,
     currentStepIndex: 10, // completed ID Linkage (idx 9) + Lab Dispatch (idx 10), Lab Auth pending
     events: [
       {
@@ -104,7 +107,7 @@ export const CHILD_SAMPLES: ChildSample[] = [
         operator: { name: 'SYSTEM', role: 'DB Sync Service', badgeId: 'SYS-002', biometricMatch: 100.0 },
         location: 'Central Laboratory DB',
         verificationMethod: 'Relational DB Sync',
-        notes: 'Child A linkage to PRNT-8810-D committed.',
+        notes: 'Lab child linkage to PRNT-8810-D committed.',
         coord: null,
       },
       {
@@ -113,22 +116,6 @@ export const CHILD_SAMPLES: ChildSample[] = [
         location: 'Lab Dispatch Counter',
         verificationMethod: 'QR Scan + Manifest Check',
         coord: { lat: 17.5474, lng: 78.5068 },
-      },
-    ],
-  },
-  {
-    id: 'CHLD-8810-D-B',
-    parentId: 'PRNT-8810-D',
-    divisionLabel: 'B',
-    currentStepIndex: 9, // completed ID Linkage only (idx 9), Lab Dispatch pending
-    events: [
-      {
-        completedAt: '2026-05-16  08:52 UTC',
-        operator: { name: 'SYSTEM', role: 'DB Sync Service', badgeId: 'SYS-002', biometricMatch: 100.0 },
-        location: 'Central Laboratory DB',
-        verificationMethod: 'Relational DB Sync',
-        notes: 'Child B linkage to PRNT-8810-D committed.',
-        coord: null,
       },
     ],
   },

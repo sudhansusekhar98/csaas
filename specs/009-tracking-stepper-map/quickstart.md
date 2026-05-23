@@ -1,7 +1,80 @@
-# Quickstart: Sample Tracking — Snake Stepper, Child Visibility & GPS Map View
+# Quickstart: QR Reprint, Dispatch Portal, Sample Allocation & Lab QR Scan
 
-**Feature**: `009-tracking-stepper-map`
-**Date**: 2026-05-19
+**Feature**: `009-tracking-stepper-map` (multi-feature batch)
+**Date**: 2026-05-20
+
+## 0. Pre-requisites
+
+```powershell
+git checkout 009-tracking-stepper-map
+npm install
+npm run dev   # http://localhost:3001 (or 3000 if free)
+```
+
+## 1. QR Code Reprint Request
+
+1. Navigate to **Sample Collection** in the sidebar.
+2. Find any collection record with a printed QR code. Click **Request Reprint**.
+3. Modal appears pre-filled with the Sample ID. Select reason "Label damaged" → click **Submit Request**.
+4. Navigate to **Personnel** (admin). A badge `(1)` should appear on the "Reprint Requests" tab.
+5. Open the tab. See the pending request. Click **Approve**.
+6. Return to Sample Collection. The "Print QR" button is now re-enabled for that sample.
+7. Repeat with **Division Station** for a child bag QR — same flow.
+
+✅ Pass: requests visible in admin, print re-enabled after approval.
+
+## 2. Administrator Dispatch Portal
+
+1. Navigate to **Dispatch Portal** in the Administration sidebar section.
+2. Add a new location: Name = "NABL Lab Hyderabad", Code = "NLH", Address = "Banjara Hills, Hyderabad". Click **Add Location**.
+3. Use ↑/↓ arrows to move it to sequence position 2.
+4. Verify the sequence table updates: Bag B now maps to "NABL Lab Hyderabad".
+
+✅ Pass: location added, sequence updated, table reflects new assignment.
+
+## 3. Sample Allocation to Lab (updated — in-panel flow)
+
+1. Navigate to **Division Station**. Open a session where all bags are **not yet** sealed (e.g., DIV-8822-X / IN_PROGRESS).
+2. Complete bagging — enter weight + assign operator for each bag, then click **Seal All Child Bags**.
+3. After all bags are sealed, verify the **Sample Allocation** section appears **inside the right panel** (no separate card below the grid, no scrolling required).
+4. Verify the allocation labels include the parent ID — e.g., **PRNT-8822-X-A** → Lab Dispatch, **PRNT-8822-X-B** → CIL Central Lab, **PRNT-8822-X-R** → CIMFR Testing Centre. No dropdown shown.
+5. Click **Confirm Dispatch**. The right panel updates to show the read-only allocation summary and the **Finalise Division Session** button, all in the same panel.
+6. Click **Finalise Division Session**. Session status becomes COMPLETED.
+7. Navigate to **Lab Receiving**. Confirm only the `-A` (lab-bound) child sample appears in the pending queue (not B or R).
+
+✅ Pass: allocation appears inline in right panel; labels include parent ID; non-lab children absent from Lab Receiver.
+
+## 4. Lab Receiver QR Scan Widget
+
+1. Navigate to **Lab Receiving**.
+2. Click **Receive** on a pending row (e.g., SUB-M-8820-A). The QR widget updates to show that sample's ID pattern.
+3. Click **Simulate Scan**. Brief ring animation plays on the QR grid, then the form auto-fills and the sample advances to "Received".
+4. Verify the stat chip "Received Today" increments.
+
+✅ Pass: scan simulation auto-fills and confirms receipt without manual form entry.
+
+## 5. QR Reprint from Child Samples (Sample Tracking)
+
+1. Navigate to **Sample Tracking**. Select sample `PRNT-8810-D` (step 11 — past division).
+2. The **Child Samples** panel is visible, listing `CHLD-8810-D-01` (lab-bound child).
+3. On the child row, click **Request Reprint**. The `ReprintRequestModal` opens with the child sample ID pre-filled and `qrType: 'child'`.
+4. Select reason "Scan failure" → click **Submit Request**. Modal closes. The child row now shows "Reprint Pending".
+5. Navigate to **Personnel** → **Reprint Requests** tab. Verify the new child sample reprint request appears in the list.
+6. Click **Approve**. Return to Sample Tracking → same sample. The child row now shows "Reprint Approved".
+
+✅ Pass: reprint request submitted from tracking, visible in admin, approval reflected back in tracking panel.
+
+## 6. Regression checks
+
+- Existing Lab Receiving receipt flow (manual form fill) still works.
+- Splitting Station seal/unseal logic unchanged.
+- Sample Collection generate-QR flow unchanged.
+- Personnel operator list and activity tabs unchanged.
+- `npm run lint` returns zero errors.
+
+---
+
+## APPENDIX — Previous Quickstart: Sample Tracking Snake Stepper + Map (2026-05-19)
 
 This is the manual-demo verification path for the feature once `/speckit-tasks` and `/speckit-implement` are complete. It maps directly to the acceptance scenarios in `spec.md` (US1 / US2 / US3).
 

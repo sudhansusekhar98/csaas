@@ -5,10 +5,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
-import type { ViewType } from '../types';
+import type { ViewType, ReprintRequest } from '../types';
+import ReprintRequestModal from './ReprintRequestModal';
 
 interface SampleCollectionViewProps {
   onNavigate: (view: ViewType) => void;
+  reprintRequests: ReprintRequest[];
+  setReprintRequests: React.Dispatch<React.SetStateAction<ReprintRequest[]>>;
 }
 
 const COLLECTORS = [
@@ -69,7 +72,7 @@ function nextParentId(): string {
   return `PRNT-${parentCounter++}-Z`;
 }
 
-export default function SampleCollectionView({ onNavigate }: SampleCollectionViewProps) {
+export default function SampleCollectionView({ onNavigate, reprintRequests, setReprintRequests }: SampleCollectionViewProps) {
   const [consignmentId, setConsignmentId] = useState('');
   const [sourceType, setSourceType] = useState<SourceType>('TRACK_HOPPER');
   const [equipmentId, setEquipmentId] = useState('');
@@ -82,6 +85,10 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
   const [generatedRecord, setGeneratedRecord] = useState<CollectionRecord | null>(null);
   const [records, setRecords] = useState<CollectionRecord[]>(INITIAL_RECORDS);
   const [confirmed, setConfirmed] = useState(false);
+  const [reprintModalSampleId, setReprintModalSampleId] = useState<string | null>(null);
+
+  const approvedReprintIds = new Set(reprintRequests.filter(r => r.status === 'approved').map(r => r.sampleId));
+  const pendingReprintIds = new Set(reprintRequests.filter(r => r.status === 'pending').map(r => r.sampleId));
 
   const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' UTC';
 
@@ -419,6 +426,12 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
                         Confirm & Register
                       </button>
                     </div>
+                    <button
+                      onClick={() => setReprintModalSampleId(generatedRecord.parentId)}
+                      className="w-full mt-2 flex items-center justify-center gap-2 py-2 border border-warning-amber/40 text-warning-amber rounded-xl text-xs font-bold hover:bg-warning-amber/5 transition-all"
+                    >
+                      <Printer size={13} /> Request Reprint
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -446,6 +459,7 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
                 <th className="px-6 py-3">Time</th>
                 <th className="px-6 py-3">RFID</th>
                 <th className="px-6 py-3 text-right">Status</th>
+                <th className="px-6 py-3 text-right">QR</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -472,12 +486,38 @@ export default function SampleCollectionView({ onNavigate }: SampleCollectionVie
                       rec.status === 'IN_TRANSIT' ? 'bg-primary-indigo/10 text-primary-indigo' : 'bg-success-emerald/10 text-success-emerald'
                     }`}>{rec.status.replace('_', ' ')}</span>
                   </td>
+                  <td className="px-6 py-4 text-right">
+                    {pendingReprintIds.has(rec.parentId) ? (
+                      <span className="text-[10px] font-bold text-warning-amber uppercase tracking-widest">Pending</span>
+                    ) : approvedReprintIds.has(rec.parentId) ? (
+                      <button className="text-[10px] font-bold text-success-emerald uppercase tracking-widest flex items-center gap-1">
+                        <Printer size={11} /> Reprint
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setReprintModalSampleId(rec.parentId)}
+                        className="text-[10px] font-bold text-text-slate-400 hover:text-warning-amber transition-colors uppercase tracking-widest"
+                      >
+                        Request
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {reprintModalSampleId && (
+        <ReprintRequestModal
+          sampleId={reprintModalSampleId}
+          qrType="parent"
+          requestedBy={collector || 'OPR-774 (J. Doe)'}
+          onSubmit={(req) => setReprintRequests(prev => [...prev, req])}
+          onClose={() => setReprintModalSampleId(null)}
+        />
+      )}
     </div>
   );
 }

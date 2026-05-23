@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
-import type { ViewType, StepEvent, ViewMode } from '../types';
+import type { ViewType, StepEvent, ViewMode, ReprintRequest } from '../types';
+import ReprintRequestModal from './ReprintRequestModal';
 import {
   SAMPLES, STEP_DEFINITIONS, STEP_EVENTS, CHILD_SAMPLES,
   buildParentRoute, buildChildRoutes, FRS_FACE_URL,
@@ -19,9 +20,11 @@ import SampleMapView from './sample-tracking/SampleMapView';
 
 interface SampleTrackingViewProps {
   onNavigate: (view: ViewType) => void;
+  reprintRequests: ReprintRequest[];
+  setReprintRequests: React.Dispatch<React.SetStateAction<ReprintRequest[]>>;
 }
 
-export default function SampleTrackingView({ onNavigate }: SampleTrackingViewProps) {
+export default function SampleTrackingView({ onNavigate, reprintRequests, setReprintRequests }: SampleTrackingViewProps) {
   const [selectedSampleId, setSelectedSampleId] = useState<string>('PRNT-8822-X');
   const [stepOffsets, setStepOffsets] = useState<Record<string, number>>({});
   const [viewMode, setViewMode] = useState<ViewMode>('stepper');
@@ -34,6 +37,11 @@ export default function SampleTrackingView({ onNavigate }: SampleTrackingViewPro
 
   // Step detail popup state
   const [activeStep, setActiveStep] = useState<{ event: StepEvent; def: typeof STEP_DEFINITIONS[0]; stepNum: number; sampleId: string } | null>(null);
+
+  // QR reprint state
+  const approvedReprintIds = new Set(reprintRequests.filter(r => r.status === 'approved').map(r => r.sampleId));
+  const pendingReprintIds  = new Set(reprintRequests.filter(r => r.status === 'pending').map(r => r.sampleId));
+  const [reprintModalSampleId, setReprintModalSampleId] = useState<string | null>(null);
 
   const selectedSample = SAMPLES.find((s) => s.id === selectedSampleId) ?? SAMPLES[0];
   const effectiveStepIndex = selectedSample.currentStepIndex + (stepOffsets[selectedSampleId] ?? 0);
@@ -229,6 +237,9 @@ export default function SampleTrackingView({ onNavigate }: SampleTrackingViewPro
                   children={parentChildren}
                   activeChildId={activeChildId}
                   onSelectChild={setActiveChildId}
+                  onRequestReprint={setReprintModalSampleId}
+                  approvedReprintIds={approvedReprintIds}
+                  pendingReprintIds={pendingReprintIds}
                 />
               )}
             </div>
@@ -571,6 +582,16 @@ export default function SampleTrackingView({ onNavigate }: SampleTrackingViewPro
           </motion.div>
         )}
       </AnimatePresence>
+
+      {reprintModalSampleId && (
+        <ReprintRequestModal
+          sampleId={reprintModalSampleId}
+          qrType="child"
+          requestedBy="OPR-774 (J. Doe)"
+          onSubmit={(req) => setReprintRequests(prev => [...prev, req])}
+          onClose={() => setReprintModalSampleId(null)}
+        />
+      )}
     </div>
   );
 }

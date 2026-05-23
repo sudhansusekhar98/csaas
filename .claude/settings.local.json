@@ -24,7 +24,24 @@
       "PowerShell(.\\\\.specify\\\\scripts\\\\powershell\\\\check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
       "PowerShell(npm install *)",
       "PowerShell(New-Item *)",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "Bash(Select-String -Path \"src\\\\components\\\\SplittingStationView.tsx\" -Pattern \"^}\")",
+      "Bash(Select-Object -Last 1)",
+      "Bash(powershell -Command \"\\(Get-Content specs/009-tracking-stepper-map/tasks.md\\) -replace '- \\\\[ \\\\] T0\\([0-9][0-9]\\)', '- [x] T0\\\\$1' | Set-Content specs/009-tracking-stepper-map/tasks.md -Encoding utf8\")",
+      "PowerShell(Start-Sleep -Seconds 5; Invoke-WebRequest -Uri \"http://localhost:3099\" -UseBasicParsing -TimeoutSec 5 | Select-Object -ExpandProperty StatusCode)",
+      "PowerShell(Start-Sleep -Seconds 8; Invoke-WebRequest -Uri \"http://localhost:3099\" -UseBasicParsing -TimeoutSec 5 | Select-Object -ExpandProperty StatusCode)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:9091\" -UseBasicParsing -TimeoutSec 5 | Select-Object -ExpandProperty StatusCode)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:9091/\" -UseBasicParsing -TimeoutSec 5 | Select-Object StatusCode, @{N='ContentLen';E={$_.Content.Length}})",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:9091/index.html\" -UseBasicParsing -TimeoutSec 5 | Select-Object StatusCode)",
+      "PowerShell(netstat *)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://0.0.0.0:9091/\" -UseBasicParsing -TimeoutSec 5 | Select-Object StatusCode)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://192.168.29.25:9091/\" -UseBasicParsing -TimeoutSec 5 | Select-Object StatusCode, @{N='Len';E={$_.Content.Length}})",
+      "PowerShell(try { Invoke-WebRequest -Uri \"http://localhost:9090/\" -UseBasicParsing -TimeoutSec 3 | Select-Object StatusCode, @{N='Len';E={$_.Content.Length}} } catch { $_.Exception.Message })",
+      "PowerShell(curl.exe -s -o NUL -w \"%{http_code} %{content_type}\" http://localhost:9091/ 2>&1)",
+      "PowerShell(Read-Host *)",
+      "PowerShell(node -e \"const {chromium}=require\\('playwright'\\); \\(async\\(\\)=>{const b=await chromium.launch\\({headless:true}\\); const p=await b.newPage\\(\\); await p.goto\\('http://localhost:9090',{waitUntil:'networkidle'}\\); await p.screenshot\\({path:'C:/Users/sudha/verify-home.png',fullPage:false}\\); console.log\\('home ok'\\); await b.close\\(\\);}\\)\\(\\).catch\\(e=>{console.error\\(e.message\\);process.exit\\(1\\);}\\)\" 2>&1)",
+      "PowerShell(Get-Command *)",
+      "Bash(Test-Path *)"
     ]
   }
 }

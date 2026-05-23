@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { ViewType } from './types';
+import type { ViewType, ReprintRequest, DispatchLocation } from './types';
 
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
@@ -26,6 +26,23 @@ import SystemHealthView from './components/SystemHealthView';
 import AuditHistoryView from './components/AuditHistoryView';
 import PersonnelManagementView from './components/PersonnelManagementView';
 import AlertConfigView from './components/AlertConfigView';
+import DispatchPortalView from './components/DispatchPortalView';
+
+const INITIAL_REPRINT_REQUESTS: ReprintRequest[] = [
+  { id: 'REQ-001', sampleId: 'PRNT-8820-A', qrType: 'parent', reason: 'Label damaged',
+    requestedBy: 'OPR-774 (J. Doe)', requestedAt: '2026-05-20T09:14:00Z', status: 'pending' },
+  { id: 'REQ-002', sampleId: 'SUB-M-8819-X', qrType: 'child', reason: 'Scan failure',
+    requestedBy: 'OPR-312 (R. Kumar)', requestedAt: '2026-05-20T10:02:00Z', status: 'pending' },
+  { id: 'REQ-003', sampleId: 'PRNT-8818-B', qrType: 'parent', reason: 'QR code faded',
+    requestedBy: 'OPR-881 (M. Patel)', requestedAt: '2026-05-19T15:30:00Z', status: 'approved',
+    reviewedBy: 'Admin (USR-001)', reviewedAt: '2026-05-19T16:05:00Z' },
+];
+
+const INITIAL_DISPATCH_LOCATIONS: DispatchLocation[] = [
+  { id: 'LOC-001', name: 'CIL Central Lab',      code: 'CCL', addressLine: 'Sector 12, Dhanbad',  sequence: 1 },
+  { id: 'LOC-002', name: 'CIMFR Testing Centre', code: 'CTC', addressLine: 'Barwa Road, Dhanbad', sequence: 2 },
+  { id: 'LOC-003', name: 'State Quality Lab',    code: 'SQL', addressLine: 'Park Road, Ranchi',   sequence: 3 },
+];
 
 type NcrStage = 'CONSIGNMENT' | 'COLLECTION' | 'TRANSIT' | 'PREP' | 'DIVISION' | 'LAB';
 
@@ -46,6 +63,10 @@ export default function App() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isNcrModalOpen, setIsNcrModalOpen] = useState(false);
+  const [reprintRequests, setReprintRequests] = useState<ReprintRequest[]>(INITIAL_REPRINT_REQUESTS);
+  const [dispatchLocations, setDispatchLocations] = useState<DispatchLocation[]>(INITIAL_DISPATCH_LOCATIONS);
+
+  const reprintPendingCount = reprintRequests.filter(r => r.status === 'pending').length;
 
   const renderView = () => {
     switch (activeView) {
@@ -56,13 +77,13 @@ export default function App() {
       case 'supplier-consignments':
         return <SupplierConsignmentsView onNavigate={setActiveView} />;
       case 'sample-collection':
-        return <SampleCollectionView onNavigate={setActiveView} />;
+        return <SampleCollectionView onNavigate={setActiveView} reprintRequests={reprintRequests} setReprintRequests={setReprintRequests} />;
       case 'tracking':
-        return <SampleTrackingView onNavigate={setActiveView} />;
+        return <SampleTrackingView onNavigate={setActiveView} reprintRequests={reprintRequests} setReprintRequests={setReprintRequests} />;
       case 'prep-room':
         return <PrepRoomView onNavigate={setActiveView} />;
       case 'division-station':
-        return <SplittingStationView onNavigate={setActiveView} />;
+        return <SplittingStationView onNavigate={setActiveView} reprintRequests={reprintRequests} setReprintRequests={setReprintRequests} dispatchLocations={dispatchLocations} />;
       case 'lab-receiving':
         return <LabReceivingView onNavigate={setActiveView} />;
       case 'non-conformance':
@@ -72,11 +93,13 @@ export default function App() {
       case 'report-builder':
         return <ReportBuilderView />;
       case 'personnel':
-        return <PersonnelManagementView />;
+        return <PersonnelManagementView reprintRequests={reprintRequests} setReprintRequests={setReprintRequests} />;
       case 'system-health':
         return <SystemHealthView />;
       case 'alert-config':
         return <AlertConfigView />;
+      case 'dispatch-portal':
+        return <DispatchPortalView onNavigate={setActiveView} dispatchLocations={dispatchLocations} setDispatchLocations={setDispatchLocations} />;
       default:
         return <ViewPlaceholder title={(activeView as string).replace('-', ' ').toUpperCase()} />;
     }
@@ -89,6 +112,7 @@ export default function App() {
         onNavigate={setActiveView}
         isSidebarOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        reprintPendingCount={reprintPendingCount}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
