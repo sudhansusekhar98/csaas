@@ -16,6 +16,7 @@ import {
   FlaskConical,
   Building2,
   QrCode,
+  SendToBack,
 } from 'lucide-react';
 import type { ViewType } from '../../types';
 
@@ -24,6 +25,7 @@ interface SidebarProps {
   onNavigate: (view: ViewType) => void;
   isSidebarOpen: boolean;
   onToggle: () => void;
+  reprintPendingCount?: number;
 }
 
 const operationsNav = [
@@ -44,6 +46,7 @@ const qualityNav = [
 
 const adminNav = [
   { id: 'personnel' as ViewType, label: 'Personnel', icon: Users },
+  { id: 'dispatch-portal' as ViewType, label: 'Dispatch Portal', icon: SendToBack },
   { id: 'system-health' as ViewType, label: 'System Health', icon: Activity },
   { id: 'alert-config' as ViewType, label: 'Alerts', icon: BellRing },
 ];
@@ -93,7 +96,7 @@ function NavGroup({ label, items, activeView, onNavigate, isSidebarOpen }: {
   );
 }
 
-export default function Sidebar({ activeView, onNavigate, isSidebarOpen }: SidebarProps) {
+export default function Sidebar({ activeView, onNavigate, isSidebarOpen, reprintPendingCount = 0 }: SidebarProps) {
   return (
     <aside
       className={`${
@@ -132,7 +135,22 @@ export default function Sidebar({ activeView, onNavigate, isSidebarOpen }: Sideb
         </div>
         <NavGroup label="Operations" items={operationsNav} activeView={activeView} onNavigate={onNavigate} isSidebarOpen={isSidebarOpen} />
         <NavGroup label="Quality & Compliance" items={qualityNav} activeView={activeView} onNavigate={onNavigate} isSidebarOpen={isSidebarOpen} />
-        <NavGroup label="Administration" items={adminNav} activeView={activeView} onNavigate={onNavigate} isSidebarOpen={isSidebarOpen} />
+        <div className="mb-2">
+          {isSidebarOpen && (
+            <div className="px-6 mb-2 mt-4 text-[10px] font-bold text-text-slate-400 uppercase tracking-widest">Administration</div>
+          )}
+          {!isSidebarOpen && <div className="mx-4 my-3 h-px bg-slate-100" />}
+          {adminNav.map((item) => (
+            <div key={item.id} className="relative">
+              <NavItem item={item} activeView={activeView} onNavigate={onNavigate} isSidebarOpen={isSidebarOpen} />
+              {item.id === 'personnel' && reprintPendingCount > 0 && (
+                <span className="absolute top-2 right-3 bg-primary-indigo text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 pointer-events-none">
+                  {reprintPendingCount}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </nav>
 
       {/* Footer */}

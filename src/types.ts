@@ -17,7 +17,56 @@ export type ViewType =
   | 'report-builder'
   | 'personnel'
   | 'system-health'
-  | 'alert-config';
+  | 'alert-config'
+  | 'dispatch-portal';
+
+// ── Feature: QR Reprint Requests ─────────────────────────────────────────────
+
+export type ReprintReason =
+  | 'Label damaged'
+  | 'Scan failure'
+  | 'QR code faded'
+  | 'Seal mismatch'
+  | 'Lost/misplaced'
+  | 'Other';
+
+export type ReprintRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export type QrCodeType = 'parent' | 'child';
+
+export interface ReprintRequest {
+  id: string;
+  sampleId: string;
+  qrType: QrCodeType;
+  reason: ReprintReason;
+  notes?: string;
+  requestedBy: string;
+  requestedAt: string;
+  status: ReprintRequestStatus;
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
+
+// ── Feature: Dispatch Portal ──────────────────────────────────────────────────
+
+export interface DispatchLocation {
+  id: string;
+  name: string;
+  code: string;
+  addressLine: string;
+  sequence: number;
+}
+
+// ── Feature: Sample Allocation ────────────────────────────────────────────────
+
+export type BagType = 'A' | 'B' | 'R' | 'D' | 'E';
+
+export interface BagAllocation {
+  bagType: BagType;
+  childIndex: number;            // 0-based; index 0 = always lab-bound
+  isLabBound: boolean;           // always true when childIndex === 0; computed, never user-set
+  dispatchLocationId?: string;   // set when !isLabBound
+}
 
 export interface ViewDef {
   id: ViewType;
@@ -53,7 +102,8 @@ export interface StepEvent {
 export interface ChildSample {
   id: string;
   parentId: string;
-  divisionLabel: string;
+  divisionLabel: string;   // 'LAB' — only lab-bound children are tracked here
+  isLabBound: true;        // always true; non-lab children are never in CHILD_SAMPLES
   currentStepIndex: number;
   events: StepEvent[];
 }

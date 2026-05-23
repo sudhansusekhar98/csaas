@@ -1,4 +1,4 @@
-import { SquareSplitVertical } from 'lucide-react';
+import { SquareSplitVertical, QrCode } from 'lucide-react';
 import type { ChildSample } from '../../types';
 import { STEP_DEFINITIONS } from '../../data/sample-tracking-mock';
 
@@ -7,9 +7,12 @@ interface ChildSamplePanelProps {
   children: ChildSample[];
   activeChildId: string | null;
   onSelectChild: (id: string | null) => void;
+  onRequestReprint: (sampleId: string) => void;
+  approvedReprintIds: Set<string>;
+  pendingReprintIds: Set<string>;
 }
 
-export default function ChildSamplePanel({ children, activeChildId, onSelectChild }: ChildSamplePanelProps) {
+export default function ChildSamplePanel({ children, activeChildId, onSelectChild, onRequestReprint, approvedReprintIds, pendingReprintIds }: ChildSamplePanelProps) {
   const POST_DIVISION_STEPS = [9, 10, 11]; // 0-based indices for steps 10, 11, 12
 
   const pipStatus = (child: ChildSample, stepIdx: number) => {
@@ -26,7 +29,7 @@ export default function ChildSamplePanel({ children, activeChildId, onSelectChil
 
       {children.length === 0 ? (
         <p className="text-[11px] text-text-slate-400 font-medium text-center py-4">
-          No child samples linked yet.
+          Lab sample not yet dispatched.
         </p>
       ) : (
         <ul className="space-y-2">
@@ -76,6 +79,22 @@ export default function ChildSamplePanel({ children, activeChildId, onSelectChil
                     })}
                   </div>
                 </button>
+                <div className="flex justify-end px-4 pb-2">
+                  {pendingReprintIds.has(child.id) ? (
+                    <span className="text-[9px] font-bold text-warning-amber uppercase tracking-widest">Reprint Pending</span>
+                  ) : approvedReprintIds.has(child.id) ? (
+                    <span className="text-[9px] font-bold text-success-emerald uppercase tracking-widest flex items-center gap-1">
+                      <QrCode size={10} /> Reprint Approved
+                    </span>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRequestReprint(child.id); }}
+                      className="text-[9px] font-bold text-text-slate-400 hover:text-warning-amber transition-colors uppercase tracking-widest"
+                    >
+                      Request Reprint
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}

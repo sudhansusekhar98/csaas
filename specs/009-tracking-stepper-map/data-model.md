@@ -1,7 +1,125 @@
-# Phase 1 Data Model: Sample Tracking — Snake Stepper, Child Visibility & GPS Map View
+# Phase 1 Data Model: QR Reprint, Dispatch Portal, Sample Allocation & Lab QR Scan
 
-**Feature**: `009-tracking-stepper-map`
-**Date**: 2026-05-19
+**Feature**: `009-tracking-stepper-map` (multi-feature batch)
+**Date**: 2026-05-20
+
+All state is in-memory React. New TypeScript shapes go into `src/types.ts`; shared state is lifted to `App.tsx`.
+
+---
+
+## New Types (src/types.ts additions)
+
+```typescript
+// ── Feature: QR Reprint Requests ─────────────────────────────────────────────
+
+export type ReprintReason =
+  | 'Label damaged'
+  | 'Scan failure'
+  | 'QR code faded'
+  | 'Seal mismatch'
+  | 'Lost/misplaced'
+  | 'Other';
+
+export type ReprintRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export type QrCodeType = 'parent' | 'child';
+
+export interface ReprintRequest {
+  id: string;                        // REQ-{timestamp}
+  sampleId: string;                  // PRNT-xxx or SUB-xxx
+  qrType: QrCodeType;
+  reason: ReprintReason;
+  notes?: string;
+  requestedBy: string;               // Operator ID/name
+  requestedAt: string;               // ISO timestamp
+  status: ReprintRequestStatus;
+  reviewedBy?: string;               // Admin name if approved/rejected
+  reviewedAt?: string;
+}
+
+// ── Feature: Dispatch Portal ──────────────────────────────────────────────────
+
+export interface DispatchLocation {
+  id: string;                        // LOC-001, LOC-002…
+  name: string;                      // e.g. "CIL Central Lab"
+  code: string;                      // Short code, e.g. "CCL"
+  addressLine: string;               // e.g. "Sector 12, Dhanbad"
+  sequence: number;                  // 1 = first child allocation slot
+}
+
+// ── Feature: Sample Allocation ────────────────────────────────────────────────
+
+export type BagType = 'A' | 'B' | 'R' | 'D' | 'E';
+
+export interface BagAllocation {
+  bagType: BagType;
+  childIndex: number;                // 0-based; index 0 = child -01 (always lab-bound)
+  isLabBound: boolean;               // true only when childIndex === 0; computed, never user-set
+  dispatchLocationId?: string;       // set when !isLabBound; derived from DispatchLocation sequence
+}
+
+// Rule: isLabBound is always derived as (childIndex === 0).
+// The operator has no dropdown to override this. dispatchLocationId for child -02 onwards
+// maps to the Nth DispatchLocation by sequence (childIndex - 1 after skipping the lab slot).
+//
+// Non-lab children (isLabBound === false) are tracked ONLY through the allocation summary —
+// they do not enter the ChildSample tracking model, the stepper panel, or the Lab Receiver queue.
+```
+
+## State lifted to App.tsx
+
+```typescript
+// Shared reprint request state
+const [reprintRequests, setReprintRequests] = useState<ReprintRequest[]>(INITIAL_REPRINT_REQUESTS);
+
+// Shared dispatch locations state
+const [dispatchLocations, setDispatchLocations] = useState<DispatchLocation[]>(INITIAL_DISPATCH_LOCATIONS);
+```
+
+## Canned Demo Data
+
+```typescript
+// src/data/reprintRequests.ts (or inline in App.tsx)
+export const INITIAL_REPRINT_REQUESTS: ReprintRequest[] = [
+  { id: 'REQ-001', sampleId: 'PRNT-8820-A', qrType: 'parent', reason: 'Label damaged',
+    requestedBy: 'OPR-774 (J. Doe)', requestedAt: '2026-05-20T09:14:00Z', status: 'pending' },
+  { id: 'REQ-002', sampleId: 'SUB-M-8819-X', qrType: 'child', reason: 'Scan failure',
+    requestedBy: 'OPR-312 (R. Kumar)', requestedAt: '2026-05-20T10:02:00Z', status: 'pending' },
+  { id: 'REQ-003', sampleId: 'PRNT-8818-B', qrType: 'parent', reason: 'QR code faded',
+    requestedBy: 'OPR-881 (M. Patel)', requestedAt: '2026-05-19T15:30:00Z', status: 'approved',
+    reviewedBy: 'Admin (USR-001)', reviewedAt: '2026-05-19T16:05:00Z' },
+];
+
+// src/data/dispatchLocations.ts (or inline in App.tsx)
+export const INITIAL_DISPATCH_LOCATIONS: DispatchLocation[] = [
+  { id: 'LOC-001', name: 'CIL Central Lab',      code: 'CCL', addressLine: 'Sector 12, Dhanbad',    sequence: 1 },
+  { id: 'LOC-002', name: 'CIMFR Testing Centre', code: 'CTC', addressLine: 'Barwa Road, Dhanbad',    sequence: 2 },
+  { id: 'LOC-003', name: 'State Quality Lab',    code: 'SQL', addressLine: 'Park Road, Ranchi',      sequence: 3 },
+];
+```
+
+## State Transitions
+
+### ReprintRequest
+```
+(raised by operator) → pending
+pending → approved  (by admin)
+pending → rejected  (by admin)
+approved → (print button re-enabled in originating view)
+```
+
+### DispatchLocation sequence
+```
+sequence defines child bag assignment:
+  seq 1 → bag A (or lab-bound bag — skip if allocated to lab)
+  seq 2 → bag B
+  seq 3 → bag R
+  …
+```
+
+---
+
+## APPENDIX — Previous: Sample Tracking Stepper + Map Data Model (2026-05-19)
 
 The prototype has no backing database; "the model" is a set of TypeScript shapes and the canned mock arrays that conform to them. New shapes go into `src/types.ts`; new and modified canned data lives in `src/data/sample-tracking-mock.ts`.
 
@@ -47,13 +165,16 @@ interface SampleOption {
 }
 ```
 
-### ChildSample (NEW)
+### ChildSample (NEW — lab-bound child only)
+
+> **Scope**: `ChildSample` records exist in the tracking system **only for the lab-bound child** (the `-01` child, `isLabBound: true`). Non-lab children are recorded in `BagAllocation` for the dispatch summary but are **never entered into `CHILD_SAMPLES`** and never appear in the stepper, map, or Lab Receiver.
 
 ```ts
 interface ChildSample {
-  id: string;                 // e.g. 'CHLD-8810-D-A'
+  id: string;                 // e.g. 'CHLD-8810-D-01' (always the -01 suffix)
   parentId: string;           // foreign key → SampleOption.id
-  divisionLabel: string;      // 'A' | 'B' | 'C' — visual badge in child row
+  divisionLabel: string;      // 'LAB' badge — only one child is tracked per parent
+  isLabBound: true;           // always true; non-lab children are not ChildSample records
   currentStepIndex: number;   // 9..11 (zero-based; 9 = ID Linkage = step 10 in 1-based UI)
   events: StepEvent[];        // events for steps 10..12 (indices 9..11); pre-division inherited from parent
 }
@@ -64,6 +185,7 @@ Validation rules:
 - `currentStepIndex >= 9` always (children exist only post Step 9 — Division Logic).
 - `currentStepIndex <= 11`.
 - `parentId` MUST exist in `SAMPLES`.
+- **At most one** `ChildSample` record per `parentId` — the `-01` lab child. Attempting to add a second is a data error.
 - `events.length === currentStepIndex - 9` (one event per completed post-division step).
 - Each child's pre-division (`stepIdx < 9`) events are read from the parent at render time; never duplicated in storage.
 
@@ -155,5 +277,9 @@ StepEvent     1 ── 0..1  Coord (null for SYSTEM steps)
 ## Canned data deltas (`src/data/sample-tracking-mock.ts`)
 
 - All 12 entries in `STEP_TEMPLATES` gain `coord` (10 with values, 2 SYSTEM entries with `null`).
-- New `CHILD_SAMPLES: ChildSample[]` array — at least 2 children per parent whose `currentStepIndex >= 9` (`PRNT-8818-B` at parent step 8 → children at step 10 max; `PRNT-8810-D` at parent step 11 → children at steps 11–12; `PRNT-8820-A` at parent step 6 → no children yet).
+- New `CHILD_SAMPLES: ChildSample[]` array — **exactly one** lab-bound child (`-01`) per parent whose `currentStepIndex >= 9`:
+  - `PRNT-8818-B` (parent step 9) → `CHLD-8818-B-01` at step 10 (ID Linkage complete)
+  - `PRNT-8810-D` (parent step 11) → `CHLD-8810-D-01` at step 12 (at Lab Authentication)
+  - `PRNT-8820-A` (parent step 6) → no child yet (pre-division)
+- Non-lab children (`-02`, `-03`) exist only as `BagAllocation` entries inside `SplittingStationView` session state; they are **never** added to `CHILD_SAMPLES`.
 - Existing `SAMPLES` array and `SAMPLE_BASE_TIMES` left intact.

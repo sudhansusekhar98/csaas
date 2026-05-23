@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
-import type { ViewType } from '../types';
+import type { ViewType, ReprintRequest, DispatchLocation, BagAllocation } from '../types';
+import ReprintRequestModal from './ReprintRequestModal';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,10 @@ const BAG_LABEL_SEQUENCE: string[]  = ['Sample A', 'Sample B', 'Referee', 'Sampl
 
 function bagSealId(parentId: string, type: BagType): string {
   return `BAG-${type}-${parentId.replace('PRNT-', '')}`;
+}
+
+function childLabel(parentId: string, bagType: BagType): string {
+  return `${parentId}-${bagType}`;
 }
 
 function emptyBaggingRecord(): Record<BagType, BagRecord> {
@@ -76,11 +81,22 @@ const STATUS_STYLES: Record<SessionStatus, string> = {
 
 interface SplittingStationViewProps {
   onNavigate: (view: ViewType) => void;
+  reprintRequests: ReprintRequest[];
+  setReprintRequests: React.Dispatch<React.SetStateAction<ReprintRequest[]>>;
+  dispatchLocations: DispatchLocation[];
 }
 
-export default function SplittingStationView({ onNavigate }: SplittingStationViewProps) {
+export default function SplittingStationView({ onNavigate, reprintRequests, setReprintRequests, dispatchLocations }: SplittingStationViewProps) {
   const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  // QR Reprint
+  const [reprintModalSealId, setReprintModalSealId] = useState<string | null>(null);
+
+  // Sample Allocation per session
+  const [bagAllocations, setBagAllocations] = useState<Record<string, BagAllocation[]>>({});
+  const approvedReprintIds = new Set(reprintRequests.filter(r => r.status === 'approved').map(r => r.sampleId));
+  const pendingReprintIds = new Set(reprintRequests.filter(r => r.status === 'pending').map(r => r.sampleId));
 
   // New session modal
   const [showNewModal, setShowNewModal] = useState(false);
@@ -575,8 +591,15 @@ export default function SplittingStationView({ onNavigate }: SplittingStationVie
                 onFinalise={handleFinalise}
                 onNavigate={onNavigate}
                 operators={OPERATORS}
+                onRequestReprint={setReprintModalSealId}
+                approvedReprintIds={approvedReprintIds}
+                pendingReprintIds={pendingReprintIds}
+                dispatchLocations={dispatchLocations}
+                confirmedAllocation={bagAllocations[selectedSession.id] ?? null}
+                onConfirmAllocation={(allocs) => setBagAllocations(prev => ({ ...prev, [selectedSession.id]: allocs }))}
               />
             </div>
+
           </div>
 
         </>
@@ -757,7 +780,7 @@ export default function SplittingStationView({ onNavigate }: SplittingStationVie
                       />
                     </div>
                     <p className="text-[10px] text-center text-text-slate-400 font-medium">
-                      {BAG_LABEL_SEQUENCE.slice(0, pendingChildCount).join(', ')}
+                      {BAG_TYPE_SEQUENCE.slice(0, pendingChildCount).map(t => childLabel(selectedSession?.parentId ?? '', t)).join(', ')}
                     </p>
                   </div>
 
@@ -773,6 +796,16 @@ export default function SplittingStationView({ onNavigate }: SplittingStationVie
           </motion.div>
         )}
       </AnimatePresence>
+
+      {reprintModalSealId && (
+        <ReprintRequestModal
+          sampleId={reprintModalSealId}
+          qrType="child"
+          requestedBy={selectedSessionId ? (sessions.find(s => s.id === selectedSessionId)?.operator ?? 'OPR-774 (J. Doe)') : 'OPR-774 (J. Doe)'}
+          onSubmit={(req) => setReprintRequests(prev => [...prev, req])}
+          onClose={() => setReprintModalSealId(null)}
+        />
+      )}
     </div>
   );
 }
@@ -794,11 +827,19 @@ interface SmallBaggingPanelProps {
   onFinalise: () => void;
   onNavigate: (view: ViewType) => void;
   operators: string[];
+  onRequestReprint: (sealId: string) => void;
+  approvedReprintIds: Set<string>;
+  pendingReprintIds: Set<string>;
+  dispatchLocations: DispatchLocation[];
+  confirmedAllocation: BagAllocation[] | null;
+  onConfirmAllocation: (allocs: BagAllocation[]) => void;
 }
 
 function SmallBaggingPanel({
-  activeStatus, pulvMarked, bags, activeBagTypes, childCountValue,
+  parentId, activeStatus, pulvMarked, bags, activeBagTypes, childCountValue,
   onChildCountChange, onWeightChange, onOperatorChange, onSealAll, onFinalise, onNavigate, operators,
+  onRequestReprint, approvedReprintIds, pendingReprintIds,
+  dispatchLocations, confirmedAllocation, onConfirmAllocation,
 }: SmallBaggingPanelProps) {
   const allSealed  = activeBagTypes.length > 0 && activeBagTypes.every((t) => bags[t].sealed);
   const canSealAll = activeBagTypes.every((t) => bags[t].weight && bags[t].assignedOperator);
@@ -864,7 +905,7 @@ function SmallBaggingPanel({
           <div className="space-y-3 flex-1 overflow-y-auto">
             {activeBagTypes.map((type, idx) => {
               const bag = bags[type];
-              const bagLabel = BAG_LABEL_SEQUENCE[idx];
+              const bagLabel = childLabel(parentId, type);
               return (
                 <div key={type} className={`border rounded-2xl p-4 ${bag.sealed ? 'border-success-emerald/30 bg-emerald-50/30' : 'border-border-slate bg-white'}`}>
                   <div className="flex items-center justify-between mb-3">
@@ -883,6 +924,22 @@ function SmallBaggingPanel({
                           <User size={11} className="text-text-slate-400" /> {bag.assignedOperator}
                         </p>
                       )}
+                      <div className="pt-1">
+                        {pendingReprintIds.has(bag.sealId) ? (
+                          <span className="text-[9px] font-bold text-warning-amber uppercase tracking-widest">Reprint Pending</span>
+                        ) : approvedReprintIds.has(bag.sealId) ? (
+                          <span className="text-[9px] font-bold text-success-emerald uppercase tracking-widest flex items-center gap-1">
+                            <QrCode size={10} /> Reprint Approved
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => onRequestReprint(bag.sealId)}
+                            className="text-[9px] font-bold text-text-slate-400 hover:text-warning-amber transition-colors uppercase tracking-widest"
+                          >
+                            Request Reprint
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -923,13 +980,38 @@ function SmallBaggingPanel({
               <QrCode size={15} /> Seal All Child Bags
             </button>
           )}
-          {allSealed && (
-            <button
-              onClick={onFinalise}
-              className="mt-4 w-full py-4 font-bold text-sm rounded-xl uppercase tracking-widest bg-primary-indigo text-white shadow-lg shadow-indigo-100 hover:brightness-110 border-transparent transition-all"
-            >
-              Finalise Division Session
-            </button>
+          {allSealed && !confirmedAllocation && (
+            <div className="mt-4">
+              <p className="label-caps text-primary-indigo mb-3">Sample Allocation</p>
+              <AllocationCard
+                parentId={parentId}
+                activeBagTypes={activeBagTypes}
+                dispatchLocations={dispatchLocations}
+                onConfirm={onConfirmAllocation}
+              />
+            </div>
+          )}
+          {allSealed && confirmedAllocation && (
+            <div className="mt-4 space-y-3">
+              <p className="label-caps text-primary-indigo">Sample Allocation</p>
+              <p className="text-xs text-text-slate-400 font-medium">Dispatch confirmed.</p>
+              <div className="space-y-2">
+                {confirmedAllocation.map(a => (
+                  <div key={a.bagType} className={`flex items-center justify-between px-4 py-2.5 rounded-xl ${a.isLabBound ? 'bg-primary-indigo/5 border border-primary-indigo/20' : 'bg-slate-50 border border-border-slate'}`}>
+                    <span className="text-sm font-bold text-text-slate-900 data-mono">{childLabel(parentId, a.bagType)}</span>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${a.isLabBound ? 'text-primary-indigo' : 'text-text-slate-500'}`}>
+                      {a.isLabBound ? 'Lab · Tracked' : (dispatchLocations.find(l => l.id === a.dispatchLocationId)?.name ?? 'Dispatch')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={onFinalise}
+                className="w-full py-4 font-bold text-sm rounded-xl uppercase tracking-widest bg-primary-indigo text-white shadow-lg shadow-indigo-100 hover:brightness-110 border-transparent transition-all"
+              >
+                Finalise Division Session
+              </button>
+            </div>
           )}
         </>
       )}
@@ -940,7 +1022,7 @@ function SmallBaggingPanel({
           <div className="space-y-2 flex-1 overflow-y-auto">
             {activeBagTypes.map((type, idx) => {
               const bag = bags[type];
-              const bagLabel = BAG_LABEL_SEQUENCE[idx];
+              const bagLabel = childLabel(parentId, type);
               return (
                 <div key={type} className="border border-success-emerald/30 bg-emerald-50/20 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -969,6 +1051,71 @@ function SmallBaggingPanel({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── AllocationCard (sub-component) ───────────────────────────────────────────
+// Auto-assignment: first bag (index 0) is always lab-bound. No operator choice.
+
+interface AllocationCardProps {
+  parentId: string;
+  activeBagTypes: BagType[];
+  dispatchLocations: DispatchLocation[];
+  onConfirm: (allocs: BagAllocation[]) => void;
+}
+
+function AllocationCard({ parentId, activeBagTypes, dispatchLocations, onConfirm }: AllocationCardProps) {
+  const sorted = [...dispatchLocations].sort((a, b) => a.sequence - b.sequence);
+
+  const allocs: BagAllocation[] = activeBagTypes.map((t, idx) => {
+    if (idx === 0) return { bagType: t, childIndex: 0, isLabBound: true };
+    const loc = sorted[idx - 1] ?? null;
+    return { bagType: t, childIndex: idx, isLabBound: false, dispatchLocationId: loc?.id };
+  });
+
+  const labBag = allocs[0];
+  const dispatchAllocs = allocs.slice(1);
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-text-slate-500 font-medium">
+        Assignments are automatic. The lab-bound sample is always dispatched first; remaining samples are dispatched to external locations and are not tracked further.
+      </p>
+
+      {/* Lab-bound row */}
+      <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-indigo/5 border border-primary-indigo/20">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-bold bg-primary-indigo text-white px-2 py-0.5 rounded-full uppercase tracking-widest">LAB</span>
+          <span className="text-sm font-bold text-text-slate-900 data-mono">{childLabel(parentId, labBag.bagType)}</span>
+        </div>
+        <span className="text-[10px] font-bold text-primary-indigo uppercase tracking-widest">Lab Dispatch · Tracked</span>
+      </div>
+
+      {/* Dispatch rows */}
+      {dispatchAllocs.length > 0 && (
+        <div className="space-y-2">
+          <p className="label-caps text-text-slate-400">Auto-assigned · Not tracked</p>
+          {dispatchAllocs.map((a) => {
+            const loc = dispatchLocations.find(l => l.id === a.dispatchLocationId);
+            return (
+              <div key={a.bagType} className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-50 border border-border-slate">
+                <span className="text-sm font-bold text-text-slate-700 data-mono">{childLabel(parentId, a.bagType)}</span>
+                <span className="text-xs text-text-slate-500 font-medium">
+                  {loc ? `${loc.name} (${loc.code})` : 'No dispatch location defined'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <button
+        onClick={() => onConfirm(allocs)}
+        className="w-full py-2.5 bg-primary-indigo text-white text-sm font-bold rounded-xl hover:brightness-110 transition-all shadow-lg shadow-indigo-100"
+      >
+        Confirm Dispatch
+      </button>
     </div>
   );
 }

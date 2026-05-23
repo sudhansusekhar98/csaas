@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ShieldCheck, Video, User, X, Package, TestTube2, AlertTriangle, ClipboardList } from 'lucide-react';
+import { ShieldCheck, Video, User, X, Package, TestTube2, AlertTriangle, ClipboardList, CheckCircle2 } from 'lucide-react';
+import type { ReprintRequest } from '../types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -141,7 +142,12 @@ const TAB_DEFS: { id: ActivityTab; label: string; icon: React.ComponentType<{ si
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export default function PersonnelManagementView() {
+interface PersonnelManagementViewProps {
+  reprintRequests: ReprintRequest[];
+  setReprintRequests: React.Dispatch<React.SetStateAction<ReprintRequest[]>>;
+}
+
+export default function PersonnelManagementView({ reprintRequests, setReprintRequests }: PersonnelManagementViewProps) {
   const [selectedOperatorId, setSelectedOperatorId] = useState<string | null>(null);
   const [activityTab, setActivityTab] = useState<ActivityTab>('parent');
 
@@ -499,6 +505,77 @@ export default function PersonnelManagementView() {
           </div>
         </div>
       )}
+
+      {/* ── QR Reprint Requests Panel ─────────────────────────────────────── */}
+      <div className="bg-white border border-border-slate rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-border-slate bg-slate-50/50 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <h3 className="font-bold text-text-slate-900 uppercase tracking-widest text-xs">QR Reprint Requests</h3>
+            {reprintRequests.filter(r => r.status === 'pending').length > 0 && (
+              <span className="bg-primary-indigo text-white text-[9px] font-bold rounded-full px-2 py-0.5">
+                {reprintRequests.filter(r => r.status === 'pending').length} pending
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] text-text-slate-400 font-medium">{reprintRequests.length} total</span>
+        </div>
+        {reprintRequests.length === 0 ? (
+          <div className="p-8 text-center text-text-slate-400 text-sm font-medium">No reprint requests filed.</div>
+        ) : (
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 text-[10px] font-bold text-text-slate-400 uppercase tracking-widest border-b border-border-slate">
+              <tr>
+                <th className="px-6 py-3">Sample ID</th>
+                <th className="px-6 py-3">Type</th>
+                <th className="px-6 py-3">Reason</th>
+                <th className="px-6 py-3">Operator</th>
+                <th className="px-6 py-3">Requested</th>
+                <th className="px-6 py-3 text-right">Status / Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {reprintRequests.map((req) => (
+                <tr key={req.id} className={`transition-colors ${req.status === 'pending' ? 'bg-amber-50/30' : 'hover:bg-slate-50'}`}>
+                  <td className="px-6 py-4 data-mono text-sm font-bold text-text-slate-900">{req.sampleId}</td>
+                  <td className="px-6 py-4">
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${req.qrType === 'parent' ? 'bg-indigo-50 text-primary-indigo' : 'bg-purple-50 text-purple-600'}`}>
+                      {req.qrType}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-text-slate-600">{req.reason}</td>
+                  <td className="px-6 py-4 text-sm text-text-slate-500">{req.requestedBy}</td>
+                  <td className="px-6 py-4 text-xs text-text-slate-400 data-mono">{new Date(req.requestedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className="px-6 py-4 text-right">
+                    {req.status === 'pending' ? (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setReprintRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved', reviewedBy: 'Admin', reviewedAt: new Date().toISOString() } : r))}
+                          className="px-3 py-1.5 rounded-lg bg-success-emerald text-white text-[10px] font-bold hover:brightness-110 transition-all"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => setReprintRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'rejected', reviewedBy: 'Admin', reviewedAt: new Date().toISOString() } : r))}
+                          className="px-3 py-1.5 rounded-lg bg-red-50 text-red-500 border border-red-100 text-[10px] font-bold hover:bg-red-100 transition-all"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    ) : req.status === 'approved' ? (
+                      <div className="flex items-center justify-end gap-1.5 text-success-emerald">
+                        <CheckCircle2 size={13} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Approved</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Rejected</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
