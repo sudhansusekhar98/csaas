@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, ChevronRight, CheckCircle2, FlaskConical, ScanLine, X } from 'lucide-react';
+import { Search, ChevronRight, CheckCircle2, FlaskConical, ScanLine, X, QrCode } from 'lucide-react';
 import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
 import DummyQrWidget from './lab-receiving/DummyQrWidget';
 import type { ViewType } from '../types';
@@ -39,6 +39,8 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [scanInput, setScanInput] = useState('');
   const [scanFeedback, setScanFeedback] = useState<'found' | 'not-found' | null>(null);
+  const [scannedItem, setScannedItem] = useState<PendingItem | null>(null);
+  const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
   const [confirmedItem, setConfirmedItem] = useState<{
     item: PendingItem;
     receiver: string;
@@ -65,15 +67,19 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
       setTimeout(() => setScanFeedback(null), 2000);
       return;
     }
-    setSelectedItemId(id);
+    setScannedItem(item);
+    setScanInput('');
+  };
+
+  const handleProceedFromScan = () => {
+    if (!scannedItem) return;
+    setSelectedItemId(scannedItem.id);
     setReceiptRecord({
       receiver: '',
-      acceptanceStatus: item.sealStatus === 'intact' ? 'accepted' : 'conditional',
-      visualCondition: item.sealStatus === 'intact' ? 'intact' : 'seal-damaged',
+      acceptanceStatus: scannedItem.sealStatus === 'intact' ? 'accepted' : 'conditional',
+      visualCondition: scannedItem.sealStatus === 'intact' ? 'intact' : 'seal-damaged',
     });
-    setScanFeedback('found');
-    setTimeout(() => setScanFeedback(null), 1500);
-    setScanInput('');
+    setScannedItem(null);
   };
 
   const handleManualSearch = () => {
@@ -180,11 +186,6 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
               </div>
 
               {/* Scan feedback */}
-              {scanFeedback === 'found' && (
-                <div className="flex items-center gap-2 text-success-emerald text-xs font-bold bg-success-emerald/10 border border-success-emerald/20 rounded-xl px-3 py-2">
-                  <CheckCircle2 size={14} /> Sample identified — review details below
-                </div>
-              )}
               {scanFeedback === 'not-found' && (
                 <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-50 border border-red-100 rounded-xl px-3 py-2">
                   <span className="text-red-500">✗</span> No pending sample found for that ID
@@ -252,7 +253,11 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
                   <label className="label-caps">Lab Receiver</label>
                   <select
                     value={receiptRecord.receiver}
-                    onChange={(e) => setReceiptRecord((r) => ({ ...r, receiver: e.target.value }))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setReceiptRecord((r) => ({ ...r, receiver: val }));
+                      if (val) setShowReceiptConfirm(true);
+                    }}
                     className="w-full bg-slate-50 border border-border-slate rounded-xl p-2.5 text-xs font-bold focus:ring-2 focus:ring-primary-indigo outline-none"
                   >
                     <option value="">Select receiver...</option>
@@ -383,6 +388,204 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
           </table>
         </div>
       </div>
+
+      {/* Receiver Selection Confirmation Modal */}
+      <AnimatePresence>
+      {showReceiptConfirm && selectedItem && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            initial={{ opacity: 0, scale: 0.88, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 16 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 28, mass: 0.8 }}
+          >
+            {/* Header */}
+            <div className="bg-primary-indigo px-6 py-5 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 rounded-full p-2">
+                  <FlaskConical size={20} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-base leading-tight">Confirm Receipt</p>
+                  <p className="text-white/70 text-xs mt-0.5">Review details before marking as received</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowReceiptConfirm(false)}
+                className="text-white/70 hover:text-white transition-colors mt-0.5"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Details */}
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-[10px] font-bold text-text-slate-400 uppercase tracking-widest">Sub/Child-Sample</p>
+              <div className="bg-slate-50 border border-border-slate rounded-xl divide-y divide-slate-100">
+                {[
+                  { label: 'Sub-Sample ID',  value: selectedItem.id,            mono: true, highlight: true },
+                  { label: 'Parent ID',      value: selectedItem.parent,        mono: true },
+                  { label: 'Weight',         value: selectedItem.weight },
+                ].map(({ label, value, mono, highlight }) => (
+                  <div key={label} className="flex justify-between items-center px-4 py-2.5 text-sm">
+                    <span className="text-text-slate-400 font-medium">{label}</span>
+                    <span className={`font-bold ${mono ? 'data-mono' : ''} ${highlight ? 'text-primary-indigo' : 'text-text-slate-800'}`}>{value}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between items-center px-4 py-2.5 text-sm">
+                  <span className="text-text-slate-400 font-medium">Seal</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                    selectedItem.sealStatus === 'intact'
+                      ? 'bg-success-emerald/10 text-success-emerald'
+                      : 'bg-warning-amber/20 text-warning-amber'
+                  }`}>{selectedItem.sealStatus}</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] font-bold text-text-slate-400 uppercase tracking-widest">Receipt Details</p>
+              <div className="bg-slate-50 border border-border-slate rounded-xl divide-y divide-slate-100">
+                <div className="flex justify-between items-center px-4 py-2.5 text-sm">
+                  <span className="text-text-slate-400 font-medium">Receiving Officer</span>
+                  <span className="font-bold text-text-slate-800">{receiptRecord.receiver}</span>
+                </div>
+                <div className="flex justify-between items-center px-4 py-2.5 text-sm">
+                  <span className="text-text-slate-400 font-medium">Receipt Time</span>
+                  <span className="font-bold data-mono text-text-slate-800">{receiptTime}</span>
+                </div>
+                {receiptRecord.acceptanceStatus && (
+                  <div className="flex justify-between items-center px-4 py-2.5 text-sm">
+                    <span className="text-text-slate-400 font-medium">Acceptance</span>
+                    <span className="font-bold capitalize text-text-slate-800">{receiptRecord.acceptanceStatus}</span>
+                  </div>
+                )}
+                {receiptRecord.visualCondition && (
+                  <div className="flex justify-between items-center px-4 py-2.5 text-sm">
+                    <span className="text-text-slate-400 font-medium">Visual Condition</span>
+                    <span className="font-bold capitalize text-text-slate-800">{receiptRecord.visualCondition.replace('-', ' ')}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setShowReceiptConfirm(false)}
+                className="flex-1 py-2.5 border border-border-slate text-text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => { setShowReceiptConfirm(false); handleConfirmReceipt(); }}
+                className="flex-1 py-2.5 bg-primary-indigo text-white rounded-xl text-sm font-bold hover:brightness-110 transition-all shadow-md shadow-indigo-100"
+              >
+                Mark as Received
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* Scan Detection Modal */}
+      <AnimatePresence>
+      {scannedItem && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            initial={{ opacity: 0, scale: 0.88, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 16 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 28, mass: 0.8 }}
+          >
+            {/* Header */}
+            <div className={`px-6 py-5 flex items-start justify-between ${scannedItem.sealStatus === 'intact' ? 'bg-primary-indigo' : 'bg-warning-amber'}`}>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 rounded-full p-2">
+                  <QrCode size={20} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-base leading-tight">Sub-Sample Detected</p>
+                  <p className="text-white/70 text-xs mt-0.5">QR code scanned successfully</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setScannedItem(null)}
+                className="text-white/70 hover:text-white transition-colors mt-0.5"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Sample details */}
+            <div className="px-6 py-5 space-y-3">
+              <p className="text-[10px] font-bold text-text-slate-400 uppercase tracking-widest">Identified Sub/Child-Sample</p>
+              <div className="bg-slate-50 border border-border-slate rounded-xl divide-y divide-slate-100">
+                {[
+                  { label: 'Sub-Sample ID',  value: scannedItem.id,            mono: true, highlight: true },
+                  { label: 'Parent ID',      value: scannedItem.parent,        mono: true },
+                  { label: 'Division Label', value: scannedItem.divisionLabel },
+                  { label: 'Weight',         value: scannedItem.weight },
+                ].map(({ label, value, mono, highlight }) => (
+                  <div key={label} className="flex justify-between items-center px-4 py-2.5 text-sm">
+                    <span className="text-text-slate-400 font-medium">{label}</span>
+                    <span className={`font-bold ${mono ? 'data-mono' : ''} ${highlight ? 'text-primary-indigo' : 'text-text-slate-800'}`}>{value}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between items-center px-4 py-2.5 text-sm">
+                  <span className="text-text-slate-400 font-medium">Seal Status</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                    scannedItem.sealStatus === 'intact'
+                      ? 'bg-success-emerald/10 text-success-emerald'
+                      : 'bg-warning-amber/20 text-warning-amber'
+                  }`}>{scannedItem.sealStatus}</span>
+                </div>
+              </div>
+
+              {scannedItem.sealStatus === 'damaged' && (
+                <div className="flex items-start gap-2 bg-warning-amber/10 border border-warning-amber/30 rounded-xl px-4 py-3 text-xs text-warning-amber font-semibold">
+                  <span className="mt-0.5">⚠</span>
+                  Seal integrity issue detected. Review before proceeding.
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setScannedItem(null)}
+                className="flex-1 py-2.5 border border-border-slate text-text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleProceedFromScan}
+                className={`flex-1 py-2.5 text-white rounded-xl text-sm font-bold hover:brightness-110 transition-all shadow-md ${
+                  scannedItem.sealStatus === 'intact'
+                    ? 'bg-primary-indigo shadow-indigo-100'
+                    : 'bg-warning-amber shadow-amber-100'
+                }`}
+              >
+                Proceed to Receive
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      </AnimatePresence>
 
       {/* Receipt Confirmation Modal */}
       <AnimatePresence>
