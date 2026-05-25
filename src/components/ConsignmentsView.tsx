@@ -59,7 +59,7 @@ export default function ConsignmentsView({ onNavigate }: ConsignmentsViewProps) 
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-[10px] font-bold text-text-slate-400 uppercase tracking-widest border-b border-border-slate">
             <tr>
-              <th className="px-8 py-4">Rack ID</th>
+              <th className="px-8 py-4">Wagon Number</th>
               <th className="px-8 py-4">Source Mine</th>
               <th className="px-8 py-4">DVC Plant</th>
               <th className="px-8 py-4">ETA / Arrival</th>

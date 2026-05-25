@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, ChevronRight, CheckCircle2, FlaskConical, ScanLine } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, ChevronRight, CheckCircle2, FlaskConical, ScanLine, X } from 'lucide-react';
 import ProcessBreadcrumb from './layout/ProcessBreadcrumb';
 import DummyQrWidget from './lab-receiving/DummyQrWidget';
 import type { ViewType } from '../types';
@@ -36,9 +37,15 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
   ]);
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [scanInput, setScanInput] = useState('');
   const [scanFeedback, setScanFeedback] = useState<'found' | 'not-found' | null>(null);
+  const [confirmedItem, setConfirmedItem] = useState<{
+    item: PendingItem;
+    receiver: string;
+    acceptanceStatus: string;
+    visualCondition: string;
+    receiptTime: string;
+  } | null>(null);
 
   const receiptTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' UTC';
   const selectedItem = pendingItems.find((i) => i.id === selectedItemId) ?? null;
@@ -49,11 +56,6 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
     receiptRecord.acceptanceStatus &&
     receiptRecord.visualCondition
   );
-
-  const flash = () => {
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 2000);
-  };
 
   // Scan-first handler: identifies the sample from a scanned/entered ID
   const handleScanResult = (id: string) => {
@@ -79,7 +81,14 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
   };
 
   const handleConfirmReceipt = () => {
-    if (!selectedItemId) return;
+    if (!selectedItemId || !selectedItem) return;
+    setConfirmedItem({
+      item: selectedItem,
+      receiver: receiptRecord.receiver,
+      acceptanceStatus: receiptRecord.acceptanceStatus,
+      visualCondition: receiptRecord.visualCondition,
+      receiptTime,
+    });
     setPendingItems((prev) =>
       prev.map((item) =>
         item.id === selectedItemId
@@ -89,7 +98,6 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
     );
     setReceiptRecord({ receiver: '', acceptanceStatus: '', visualCondition: '' });
     setSelectedItemId(null);
-    flash();
   };
 
   const handleMarkCompleted = (id: string) => {
@@ -99,7 +107,6 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
       )
     );
     setSelectedItemId(null);
-    flash();
   };
 
   const pendingIds = pendingItems.filter(i => i.type === 'pending').map(i => i.id);
@@ -113,7 +120,7 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="text-3xl font-bold text-text-slate-900 tracking-tight">Lab Receiving & Authentication</h2>
-          <p className="text-text-slate-500 mt-1 text-sm">Scan a sub-sample QR code to identify and receive it.</p>
+          <p className="text-text-slate-500 mt-1 text-sm">Scan a sub/Child-sample QR code to identify and receive it.</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -191,7 +198,7 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
           {/* Identified sample detail card — appears after scan */}
           {selectedItem && (
             <div className="bg-white border-2 border-primary-indigo/30 rounded-2xl p-6 shadow-sm">
-              <p className="label-caps text-primary-indigo mb-4">Identified Sub-Sample</p>
+              <p className="label-caps text-primary-indigo mb-4">Identified Sub/Child-Sample</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-text-slate-400 font-medium">Sample ID</span>
@@ -290,11 +297,6 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
                   </div>
                 </div>
 
-                {showSuccess && (
-                  <div className="bg-success-emerald/10 border border-success-emerald/30 rounded-xl p-3 flex items-center gap-2 text-success-emerald text-xs font-bold">
-                    <CheckCircle2 size={15} /> Action confirmed successfully.
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -327,7 +329,7 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-[10px] font-bold text-text-slate-400 uppercase tracking-widest border-b border-border-slate">
               <tr>
-                <th className="px-6 py-4">Sub-Sample ID</th>
+                <th className="px-6 py-4">Sub/Child-Sample ID</th>
                 <th className="px-6 py-4">Parent ID</th>
                 <th className="px-6 py-4 text-right">Weight</th>
                 <th className="px-6 py-4">Status</th>
@@ -381,6 +383,90 @@ export default function LabReceivingView({ onNavigate: _onNavigate }: LabReceivi
           </table>
         </div>
       </div>
+
+      {/* Receipt Confirmation Modal */}
+      <AnimatePresence>
+      {confirmedItem && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+            initial={{ opacity: 0, scale: 0.88, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 16 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 28, mass: 0.8 }}
+          >
+            {/* Header */}
+            <div className="bg-success-emerald px-6 py-5 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 rounded-full p-2">
+                  <CheckCircle2 size={22} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-base leading-tight">Sample Successfully Received</p>
+                  <p className="text-white/70 text-xs mt-0.5">Receipt record has been logged</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setConfirmedItem(null)}
+                className="text-white/70 hover:text-white transition-colors mt-0.5"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Sub-sample details */}
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-[10px] font-bold text-text-slate-400 uppercase tracking-widest">Sub/Child-Sample Details</p>
+              <div className="bg-slate-50 border border-border-slate rounded-xl divide-y divide-slate-100">
+                {[
+                  { label: 'Sub-Sample ID', value: confirmedItem.item.id, mono: true, highlight: true },
+                  { label: 'Parent ID',     value: confirmedItem.item.parent, mono: true },
+                  { label: 'Division Label',value: confirmedItem.item.divisionLabel },
+                  { label: 'Weight',        value: confirmedItem.item.weight },
+                  { label: 'Seal Status',   value: confirmedItem.item.sealStatus },
+                ].map(({ label, value, mono, highlight }) => (
+                  <div key={label} className="flex justify-between items-center px-4 py-2.5 text-sm">
+                    <span className="text-text-slate-400 font-medium">{label}</span>
+                    <span className={`font-bold ${mono ? 'data-mono' : ''} ${highlight ? 'text-primary-indigo' : 'text-text-slate-800'}`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-[10px] font-bold text-text-slate-400 uppercase tracking-widest">Receipt Record</p>
+              <div className="bg-slate-50 border border-border-slate rounded-xl divide-y divide-slate-100">
+                {[
+                  { label: 'Received By',        value: confirmedItem.receiver },
+                  { label: 'Receipt Time',        value: confirmedItem.receiptTime, mono: true },
+                  { label: 'Acceptance Status',   value: confirmedItem.acceptanceStatus },
+                  { label: 'Visual Condition',    value: confirmedItem.visualCondition.replace('-', ' ') },
+                ].map(({ label, value, mono }) => (
+                  <div key={label} className="flex justify-between items-center px-4 py-2.5 text-sm">
+                    <span className="text-text-slate-400 font-medium">{label}</span>
+                    <span className={`font-bold capitalize ${mono ? 'data-mono' : ''} text-text-slate-800`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setConfirmedItem(null)}
+                className="w-full py-2.5 bg-primary-indigo text-white rounded-xl text-sm font-bold hover:brightness-110 transition-all shadow-md shadow-indigo-100"
+              >
+                Done
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      </AnimatePresence>
     </div>
   );
 }

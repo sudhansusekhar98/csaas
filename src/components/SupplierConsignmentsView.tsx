@@ -202,8 +202,8 @@ export default function SupplierConsignmentsView({ onNavigate }: SupplierConsign
                   <h3 className="font-bold text-[10px] text-text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Logistics Manifest</h3>
                   <div className="grid grid-cols-2 gap-5">
                     <div className="space-y-1.5">
-                      <label className="label-caps">Rack ID</label>
-                      <input type="text" placeholder="RCK-XXXX-X" className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none placeholder:text-slate-300" />
+                      <label className="label-caps">Wagon Numbers</label>
+                      <input type="text" placeholder="22032094035, 22032094036, etc" className="w-full bg-slate-50 border border-border-slate rounded-xl p-3 text-xs data-mono font-bold focus:ring-2 focus:ring-primary-indigo outline-none placeholder:text-slate-300" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="label-caps">Total Wagon Count</label>
@@ -272,7 +272,7 @@ export default function SupplierConsignmentsView({ onNavigate }: SupplierConsign
               <th className="px-6 py-4">Source Mine</th>
               <th className="px-6 py-4">Contract No.</th>
               <th className="px-6 py-4">DVC Plant</th>
-              <th className="px-6 py-4">Rack / Wagons</th>
+              <th className="px-6 py-4">Wagons</th>
               <th className="px-6 py-4">Grade / GCV</th>
               <th className="px-6 py-4">Sampling</th>
               <th className="px-6 py-4 text-right">Status</th>
